@@ -1,7 +1,8 @@
 CC = aarch64-none-linux-gnu-gcc
 AS = aarch64-none-linux-gnu-as
 OBJCOPY = aarch64-none-linux-gnu-objcopy
-CFLAGS = -Wall -O2 -ffreestanding -nostdlib -nostartfiles -ggdb
+CFLAGS =  -O0 -ffreestanding -nostdlib -nostartfiles -ggdb
+#CFLAGS += -Wall
 QEMU = qemu-system-aarch64
 
 KERNELDIR = kernel
