@@ -1,3 +1,4 @@
+
 # Prerequisites
 *.d
 
@@ -50,3 +51,10 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Images
+*.img
+
+# Other build artifacts
+/build/*
+/real_kern
