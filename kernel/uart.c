@@ -1,5 +1,6 @@
-#include "kernel.h"
-
+#include "types.h"
+#include "memory_map.h"
+#include "definitions.h"
 
 /**
  * Set baud rate and characteristics (115200 8N1) and map to GPIO

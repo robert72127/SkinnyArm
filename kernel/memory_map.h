@@ -4,9 +4,11 @@
 #define NCPU 4
 
 // memory map
+// thank's to https://github.com/bztsrc/raspi3-tutorial
 
 #define MMIO_BASE       0x3F000000
 
+// gpio pins
 #define GPFSEL0         ((volatile unsigned int*)(MMIO_BASE+0x00200000))
 #define GPFSEL1         ((volatile unsigned int*)(MMIO_BASE+0x00200004))
 #define GPFSEL2         ((volatile unsigned int*)(MMIO_BASE+0x00200008))
@@ -26,7 +28,6 @@
 #define GPPUDCLK0       ((volatile unsigned int*)(MMIO_BASE+0x00200098))
 #define GPPUDCLK1       ((volatile unsigned int*)(MMIO_BASE+0x0020009C))
 
-
 /* Auxilary mini UART registers */
 #define AUX_ENABLE      ((volatile unsigned int*)(MMIO_BASE+0x00215004))
 #define AUX_MU_IO       ((volatile unsigned int*)(MMIO_BASE+0x00215040))
@@ -40,3 +41,9 @@
 #define AUX_MU_CNTL     ((volatile unsigned int*)(MMIO_BASE+0x00215060))
 #define AUX_MU_STAT     ((volatile unsigned int*)(MMIO_BASE+0x00215064))
 #define AUX_MU_BAUD     ((volatile unsigned int*)(MMIO_BASE+0x00215068))
+
+// random number generator, used in scheduler
+#define RNG_CTRL        ((volatile unsigned int*)(MMIO_BASE+0x00104000))
+#define RNG_STATUS      ((volatile unsigned int*)(MMIO_BASE+0x00104004))
+#define RNG_DATA        ((volatile unsigned int*)(MMIO_BASE+0x00104008))
+#define RNG_INT_MASK    ((volatile unsigned int*)(MMIO_BASE+0x00104010))
