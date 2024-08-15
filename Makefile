@@ -18,6 +18,7 @@ all: kernel8.img
 $(BUILDDIR)/boot.o: $(KERNELDIR)/boot.S
 	@mkdir -p $(BUILDDIR)
 	$(AS) -c $(KERNELDIR)/boot.S -o $(BUILDDIR)/boot.o
+	#$(CC) $(CFLAGS) -c $(KERNELDIR)/boot.S -o $(BUILDDIR)/boot.o
 
 $(BUILDDIR)/%.o: $(KERNELDIR)/%.c
 	@mkdir -p $(BUILDDIR)

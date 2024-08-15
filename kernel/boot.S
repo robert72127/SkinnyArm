@@ -3,6 +3,7 @@
 .global _start
 
 _start:
+
     // clear bss
     ldr     x1, =__bss_start
     ldr     x2, =__bss_size
@@ -16,7 +17,7 @@ clear_bss:
     // start them from core0 by writing address of _start 
     // to address of each core
 start_cores: 
-    ldr x0, =set_stack
+    ldr x0, =set_el1
     
     // start core 1 0xE0
     ldr x1, =0xE0
@@ -30,9 +31,30 @@ start_cores:
     ldr x1, =0xF0
     str x0, [x1] 
 
-    b set_stack
+// we start in EL2
+set_el1:
+    // enable CNTP for EL1
+    // this grant access to counter registers
+    // for delay code
+    mrs     x0, cnthctl_el2
+    orr     x0, x0, #3
+    msr     cnthctl_el2, x0
+    msr     cntvoff_el2, xzr
+    // enable AArch64 in EL1
+    mov     x0, #(1 << 31)      // AArch64
+    orr     x0, x0, #(1 << 1)   // SWIO hardwired on Pi3
+    msr     hcr_el2, x0
+    mrs     x0, hcr_el2
+    // change execution level to EL1, return to set_stack
+    mov     x2, #0x3c4
+    msr     spsr_el2, x2
+    adr     x2, set_stack
+    msr     elr_el2, x2
+    eret
 
 set_stack:
+     mrs     x0, CurrentEL
+    and     x0, x0, #12 // clear reserved bits
     # get cpu_id
     mrs     x0, mpidr_el1
     and     x0, x0, #3

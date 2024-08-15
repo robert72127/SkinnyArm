@@ -64,3 +64,13 @@ void uart_puts(char *s) {
         uart_send(*s++);
     }
 }
+
+void uart_interrupt(void){
+    while(1){
+        char c = uart_getc();
+        if (c == -1){
+            break;
+        }
+        
+    }
+}

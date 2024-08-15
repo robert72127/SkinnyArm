@@ -13,7 +13,7 @@ void rand_init(){
 /**
  * Return a random number between [min..max]
  */
-uint64_t rand(uint64_t min, uint64_t int max)
+uint64_t rand(uint64_t min, uint64_t max)
 {
     // may need to wait for entropy: bits 24-31 store how many words are
     // available for reading; require at least one
