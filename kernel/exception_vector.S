@@ -2,13 +2,13 @@
     // for invalid entries go to invalid_entry handler and print message
     .macro handle_invalid_entry type
 	kernel_entry
-	mov	x0, #\type
+	mov	x0, #\type // 0 - E1t, 1 - EL1h, 2 - EL0_64, 3 - EL0_32 
 	mrs	x1, esr_el1
 	mrs	x2, elr_el1
     mrs x3, spsr_el1
     mrs x4, far_el1
 	bl	show_invalid_entry_message
-	b	invalid_entry_handler
+	b	generic_exception_handler
 	.endm
 
     // save and restore context
@@ -62,21 +62,105 @@
 
 // Exception table
 // must be aligned to 2^11
+
+
+////////////////////////////////////////////////////////////////////////////
+/// There are 4 types of exceptions:                                      //
+////////////////////////////////////////////////////////////////////////////
+// syynchronous exceptions - caused by currenlty executed instruction     //
+// irq - normal interrupts                                                //
+// fiq - fast interrupts                                                  //
+// SError system error                                                    //
+////////////////////////////////////////////////////////////////////////////\
+
+////////////////////////////////////////////////////////////////////////////////
+/// There are 4 different states that cause exception:                        //
+////////////////////////////////////////////////////////////////////////////////
+// EL1t - exception taken from EL1 while stack pointer was  shared with EL0 - //
+// this happens when SPSel register holds value 0                             //
+//****************************************************************************//
+// EL1h - exception taken from EL1 at the time when dedicated stack pointer   //
+// was allocated for EL1, this means SPSel holds value 1 and this is the mode // 
+// that we are currently executing                                            //
+//****************************************************************************//
+// EL0_64 Exception is taken from EL0 executing in 64 bit mode                //
+//****************************************************************************//
+// EL0_32 Exception is taken from EL0 executing in 32 bit mode                //
+//****************************************************************************//
+////////////////////////////////////////////////////////////////////////////////
+
+// in total we need 16  cases
+
 vectors:
+    // EL1t
     ventry	sync_invalid_el1t			// Synchronous EL1t
-	ventry	irq_invalid_el1t			// IRQ EL1t
+	ventry	irq_exception_el1t			// IRQ EL1t
 	ventry	fiq_invalid_el1t			// FIQ EL1t
 	ventry	error_invalid_el1t			// Error EL1t
+    // EL1h
+    ventry	sync_invalid_el1h			// Synchronous EL1t
+	ventry	irq_invalid_el1h			// IRQ EL1t
+	ventry	fiq_invalid_el1h			// FIQ EL1t
+	ventry	error_invalid_el1h			// Error EL1t
+    // EL0_64
+    ventry	sync_invalid_el0_64			// Synchronous EL1t
+	ventry	irq_invalid_el10_64			// IRQ EL1t
+	ventry	fiq_invalid_el10_64			// FIQ EL1t
+	ventry	error_invalid_el0_64		// Error EL1t
+    // EL0_32
+    ventry	sync_invalid_el0_32			// Synchronous EL1t
+	ventry	irq_invalid_el10_32			// IRQ EL1t
+	ventry	fiq_invalid_el0_32			// FIQ EL1t
+	ventry	error_invalid_el0_32		// Error EL1t
 
-	ventry	sync_invalid_el1h			// Synchronous EL1h
-	ventry	el1_irq					// IRQ EL1h
-	ventry	fiq_invalid_el1h			// FIQ EL1h
-	ventry	error_invalid_el1h			// Error EL1h
+// now the labels we jump to:
 
-	ventry	sync_invalid_el0_64			// Synchronous 64-bit EL0
-	ventry	irq_invalid_el0_64			// IRQ 64-bit EL0
-	ventry	fiq_invalid_el0_64			// FIQ 64-bit EL0
-	ventry	error_invalid_el0_64		// Error 64-bit EL0
+sync_invalid_el1t:
+	handle_invalid_entry  0
 
-    // don't care about rest, but at least print some info to acknowledge
-    handle_invalid_entry 
+irq_exception_el1t:
+	kernel_entry 
+	bl	handle_irq
+	kernel_exit 
+
+fiq_invalid_el1t:
+	handle_invalid_entry  0
+    
+error_invalid_el1t:
+	handle_invalid_entry  0
+////////////////////////////
+sync_invalid_el1h:
+	handle_invalid_entry  1
+
+irq_invalid_el1h:
+	handle_invalid_entry  1
+
+fiq_invalid_el1h:
+	handle_invalid_entry  1
+    
+error_invalid_el1h:
+	handle_invalid_entry  1
+////////////////////////////
+sync_invalid_el0_64:
+	handle_invalid_entry  2
+
+irq_invalid_el0_64:
+	handle_invalid_entry  2
+
+fiq_invalid_el0_64:
+	handle_invalid_entry  2
+    
+error_invalid_el0_64:
+	handle_invalid_entry  2
+////////////////////////////
+sync_invalid_el0_32:
+	handle_invalid_entry  3
+
+irq_invalid_el0_32:
+	handle_invalid_entry  3
+
+fiq_invalid_el0_32:
+	handle_invalid_entry  3
+    
+error_invalid_el0_32:
+	handle_invalid_entry  3
