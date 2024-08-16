@@ -8,24 +8,25 @@ QEMU = qemu-system-aarch64
 KERNELDIR = kernel
 BUILDDIR = build
 
-SRCS = $(wildcard $(KERNELDIR)/*.c)
-OBJS = $(patsubst $(KERNELDIR)/*.c,  $(BUILDDIR)/*.o,  $(SRCS))
+SRCS_C = $(wildcard $(KERNELDIR)/*.c)
+SRCS_S = $(wildcard $(KERNELDIR)/*.S)
+OBJS = $(patsubst $(KERNELDIR)/*.c,  $(BUILDDIR)/*.o,  $(SRCS_C))
+OBJS += $(patsubst $(KERNELDIR)/*.S,  $(BUILDDIR)/*.o,  $(SRCS_S))
 
 all: kernel8.img
 
 .PHONY: run clean
 
-$(BUILDDIR)/boot.o: $(KERNELDIR)/boot.S
+$(BUILDDIR)/%.o: $(KERNELDIR)/%.S
 	@mkdir -p $(BUILDDIR)
-	$(AS) -c $(KERNELDIR)/boot.S -o $(BUILDDIR)/boot.o
-	#$(CC) $(CFLAGS) -c $(KERNELDIR)/boot.S -o $(BUILDDIR)/boot.o
+	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(BUILDDIR)/%.o: $(KERNELDIR)/%.c
 	@mkdir -p $(BUILDDIR)
 	$(CC) $(CFLAGS) -c -o $@ $^
 
-kernel8.img: $(BUILDDIR)/boot.o $(OBJS)   $(KERNELDIR)/link.ld
-	$(CC) $(CFLAGS) $(BUILDDIR)/boot.o  $(OBJS) -T $(KERNELDIR)/link.ld -o $(BUILDDIR)/kernel8.elf
+kernel8.img:  $(OBJS)   $(KERNELDIR)/link.ld
+	$(CC) $(CFLAGS)  $(OBJS) -T $(KERNELDIR)/link.ld -o $(BUILDDIR)/kernel8.elf
 	$(OBJCOPY) $(BUILDDIR)/kernel8.elf -O binary kernel8.img
 
 run: kernel8.img 

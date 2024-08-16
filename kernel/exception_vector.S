@@ -1,19 +1,18 @@
 	
     // for invalid entries go to invalid_entry handler and print message
-    .macro handle_invalid_entry type
+    .macro handle_invalid_entry state type
 	kernel_entry
 	mov	x0, #\type // 0 - E1t, 1 - EL1h, 2 - EL0_64, 3 - EL0_32 
-	mrs	x1, esr_el1
-	mrs	x2, elr_el1
-    mrs x3, spsr_el1
-    mrs x4, far_el1
-	bl	show_invalid_entry_message
+	mrs	x2, esr_el1
+	mrs	x3, elr_el1
+    mrs x4, spsr_el1
+    mrs x5, far_el1
 	b	generic_exception_handler
 	.endm
 
     // save and restore context
     .macro	kernel_entry
-	sub	sp, sp, #S_FRAME_SIZE
+	sub	sp, sp, 256 // 256 frame size for all saved registers
 	stp	x0, x1, [sp, #16 * 0]
 	stp	x2, x3, [sp, #16 * 1]
 	stp	x4, x5, [sp, #16 * 2]
@@ -49,7 +48,7 @@
 	ldp	x26, x27, [sp, #16 * 13]
 	ldp	x28, x29, [sp, #16 * 14]
 	ldr	x30, [sp, #16 * 15] 
-	add	sp, sp, #S_FRAME_SIZE		
+	add	sp, sp, 256 // 256 frame size for all saved registers
 	eret
 	.endm
 ///////////////////////////
@@ -91,6 +90,8 @@
 
 // in total we need 16  cases
 
+.global vectors
+
 vectors:
     // EL1t
     ventry	sync_invalid_el1t			// Synchronous EL1t
@@ -104,19 +105,19 @@ vectors:
 	ventry	error_invalid_el1h			// Error EL1t
     // EL0_64
     ventry	sync_invalid_el0_64			// Synchronous EL1t
-	ventry	irq_invalid_el10_64			// IRQ EL1t
-	ventry	fiq_invalid_el10_64			// FIQ EL1t
+	ventry	irq_invalid_el0_64			// IRQ EL1t
+	ventry	fiq_invalid_el0_64			// FIQ EL1t
 	ventry	error_invalid_el0_64		// Error EL1t
     // EL0_32
     ventry	sync_invalid_el0_32			// Synchronous EL1t
-	ventry	irq_invalid_el10_32			// IRQ EL1t
+	ventry	irq_invalid_el0_32			// IRQ EL1t
 	ventry	fiq_invalid_el0_32			// FIQ EL1t
 	ventry	error_invalid_el0_32		// Error EL1t
 
 // now the labels we jump to:
 
 sync_invalid_el1t:
-	handle_invalid_entry  0
+	handle_invalid_entry 0 0
 
 irq_exception_el1t:
 	kernel_entry 
@@ -124,43 +125,43 @@ irq_exception_el1t:
 	kernel_exit 
 
 fiq_invalid_el1t:
-	handle_invalid_entry  0
+	handle_invalid_entry  0 2
     
 error_invalid_el1t:
-	handle_invalid_entry  0
+	handle_invalid_entry  0 3
 ////////////////////////////
 sync_invalid_el1h:
-	handle_invalid_entry  1
+	handle_invalid_entry  1 0
 
 irq_invalid_el1h:
-	handle_invalid_entry  1
+	handle_invalid_entry  1 1
 
 fiq_invalid_el1h:
-	handle_invalid_entry  1
+	handle_invalid_entry  1 2 
     
 error_invalid_el1h:
-	handle_invalid_entry  1
+	handle_invalid_entry  1 3
 ////////////////////////////
 sync_invalid_el0_64:
-	handle_invalid_entry  2
+	handle_invalid_entry  2 0
 
 irq_invalid_el0_64:
-	handle_invalid_entry  2
+	handle_invalid_entry  2 1
 
 fiq_invalid_el0_64:
-	handle_invalid_entry  2
+	handle_invalid_entry  2 2
     
 error_invalid_el0_64:
-	handle_invalid_entry  2
+	handle_invalid_entry  2 3
 ////////////////////////////
 sync_invalid_el0_32:
-	handle_invalid_entry  3
+	handle_invalid_entry  3 0
 
 irq_invalid_el0_32:
-	handle_invalid_entry  3
+	handle_invalid_entry  3 1
 
 fiq_invalid_el0_32:
-	handle_invalid_entry  3
+	handle_invalid_entry  3 2
     
 error_invalid_el0_32:
-	handle_invalid_entry  3
+	handle_invalid_entry  3 3

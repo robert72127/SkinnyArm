@@ -3,8 +3,16 @@
 #include "definitions.h"
 #include "low_level.h"
 
-void exc_handler(unsigned long type, unsigned long esr, unsigned long elr, unsigned long spsr, unsigned long far)
+void generic_exception_handler(unsigned long state,unsigned long type, unsigned long esr, unsigned long elr, unsigned long spsr, unsigned long far)
 {
+    // print out state
+    switch(state) {
+        case 0: uart_puts("EL1T"); break;
+        case 1: uart_puts("EL1H"); break;
+        case 2: uart_puts("EL0_64"); break;
+        case 3: uart_puts("EL0_32"); break;
+    }
+    uart_puts(":\n");
     // print out interruption type
     switch(type) {
         case 0: uart_puts("Synchronous"); break;
@@ -12,7 +20,7 @@ void exc_handler(unsigned long type, unsigned long esr, unsigned long elr, unsig
         case 2: uart_puts("FIQ"); break;
         case 3: uart_puts("SError"); break;
     }
-    uart_puts(": ");
+    uart_puts(":\n");
     // decode exception type (some, not all. See ARM DDI0487B_b chapter D10.2.28)
     switch(esr>>26) {
         case 0b000000: uart_puts("Unknown"); break;
@@ -62,4 +70,9 @@ void exc_handler(unsigned long type, unsigned long esr, unsigned long elr, unsig
     */
     // no return from exception for now
     while(1);
+}
+
+
+void handle_irq(){
+    
 }

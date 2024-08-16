@@ -52,8 +52,8 @@ set_el1:
     movk    x2, #0x30d0, lsl #16
     msr     sctlr_el1, x2
     // set up exception handlers
-    ldr x2, vectors
-    msr sctlr, x2
+    ldr     x2, vectors
+    msr     vbar_el1, x2
     // change execution level to EL1, return to set_stack
     mov     x2, #0x3c4
     msr     spsr_el2, x2
@@ -81,52 +81,3 @@ jump_main:
     // for failsafe, halt
 loop_forever:
     b       loop_forever
-
-
-// exception vectors
-// has to be properly aligned
-    .align 11
-vectors:
-    //synchronous
-    .align 7
-    # set type esr, elr, spsr, far to identify cause
-    mov x0, #0
-    mrs x1, esr_el1
-    mrs x2, elr_el1
-    mrs x3, spsr_el1
-    mrs x4, far_el1
-    # finally jump to exception handler code
-    b exc_handler 
-    
-    //IRQ
-    .align 7
-    # set type esr, elr, spsr, far to identify cause
-    mov x0, #1
-    mrs x1, esr_el1
-    mrs x2, elr_el1
-    mrs x3, spsr_el1
-    mrs x4, far_el1
-    # finally jump to exception handler code
-    b exc_handler 
-
-    //FIQ
-    .align 7
-    # set type esr, elr, spsr, far to identify cause
-    mov x0, #2
-    mrs x1, esr_el1
-    mrs x2, elr_el1
-    mrs x3, spsr_el1
-    mrs x4, far_el1
-    # finally jump to exception handler code
-    b exc_handler 
-
-    //SError
-    .align 7
-    # set type esr, elr, spsr, far to identify cause
-    mov x0, #3
-    mrs x1, esr_el1
-    mrs x2, elr_el1
-    mrs x3, spsr_el1
-    mrs x4, far_el1
-    # finally jump to exception handler code
-    b exc_handler 
