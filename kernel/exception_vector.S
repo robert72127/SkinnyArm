@@ -63,6 +63,26 @@
 // must be aligned to 2^11
 
 
+//// irq
+.global irq_vector_init
+irq_vector_init:
+    // load VBAR_EL1 with virtual vector table address
+    adr x0, vectors
+    msr vbar_el1, x0 
+    ret
+
+.global enable_irq
+enable_irq:
+    msr daifclr, #2
+    ret
+
+.global disable_irq
+disable_irq:
+    msr daifset, #2
+    ret
+
+
+
 ////////////////////////////////////////////////////////////////////////////
 /// There are 4 types of exceptions:                                      //
 ////////////////////////////////////////////////////////////////////////////
@@ -70,7 +90,7 @@
 // irq - normal interrupts                                                //
 // fiq - fast interrupts                                                  //
 // SError system error                                                    //
-////////////////////////////////////////////////////////////////////////////\
+////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////
 /// There are 4 different states that cause exception:                        //

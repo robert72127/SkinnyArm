@@ -8,3 +8,7 @@ uint8_t get_cpu_id(){
     );
     return cpu_id;
 }
+
+void spin(){
+    asm volatile("nop");
+}

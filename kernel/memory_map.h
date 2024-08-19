@@ -22,6 +22,7 @@
 //Thus a peripheral advertised here at bus address 0x7Ennnnnn is available at physical address 0x3Fnnnnnn.
 
 /* Auxilary mini UART registers */
+#define AUX_IRQ         ((volatile unsigned int*)(MMIO_BASE+0x00215000))
 #define AUX_ENABLE      ((volatile unsigned int*)(MMIO_BASE+0x00215004))
 #define AUX_MU_IO       ((volatile unsigned int*)(MMIO_BASE+0x00215040))
 #define AUX_MU_IER      ((volatile unsigned int*)(MMIO_BASE+0x00215044))
@@ -55,6 +56,20 @@
 #define GPPUDCLK0       ((volatile unsigned int*)(MMIO_BASE+0x00200098))
 #define GPPUDCLK1       ((volatile unsigned int*)(MMIO_BASE+0x0020009C))
 
+// IRQ
+#define IRQ_BASIC_PENDING	((volatile unsigned int*)(MMIO_BASE+0x0000B200))
+#define IRQ_PENDING_1		((volatile unsigned int*)(MMIO_BASE+0x0000B204))
+#define IRQ_PENDING_2		((volatile unsigned int*)(MMIO_BASE+0x0000B208))
+#define FIQ_CONTROL		    ((volatile unsigned int*)(MMIO_BASE+0x0000B20C))
+#define ENABLE_IRQS_1		((volatile unsigned int*)(MMIO_BASE+0x0000B210))
+#define ENABLE_IRQS_2		((volatile unsigned int*)(MMIO_BASE+0x0000B214))
+#define ENABLE_BASIC_IRQS	((volatile unsigned int*)(MMIO_BASE+0x0000B218))
+#define DISABLE_IRQS_1		((volatile unsigned int*)(MMIO_BASE+0x0000B21C))
+#define DISABLE_IRQS_2		((volatile unsigned int*)(MMIO_BASE+0x0000B220))
+#define DISABLE_BASIC_IRQS	((volatile unsigned int*)(MMIO_BASE+0x0000B224))
+#define CORE0_IRQ_SRC		((volatile unsigned int*)(0x40000060))
+#define LOCAL_TIMER_IRQ		(1 << 11)
+
 
 // random number generator, used in scheduler
 #define RNG_CTRL        ((volatile unsigned int*)(MMIO_BASE+0x00104000))
@@ -65,6 +80,7 @@
 // Delays
 #define SYSTMR_LO        ((volatile unsigned int*)(MMIO_BASE+0x00003004))
 #define SYSTMR_HI        ((volatile unsigned int*)(MMIO_BASE+0x00003008))
+
 
 // SD_CARD
 #define EMMC_ARG2           ((volatile unsigned int*)(MMIO_BASE+0x00300000))

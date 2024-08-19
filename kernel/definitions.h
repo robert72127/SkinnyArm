@@ -24,5 +24,12 @@ void wait_msec(unsigned int n);
 unsigned long get_system_timer();
 void wait_msec_st(unsigned int n);
 
+// irq.c
+void enable_intterrupt_controller();
+void irq_vector_init();
+void enable_irq();
+void disable_irq();
+
+
 // vm.c
-void mmu_init();
+//void mmu_init();

@@ -79,3 +79,4 @@ void wait_msec_st(unsigned int n)
     // system timer, and returning constant zero would mean infinite loop
     if(t) while(get_system_timer()-t < n);
 }
+

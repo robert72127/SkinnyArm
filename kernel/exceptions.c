@@ -74,5 +74,7 @@ void generic_exception_handler(unsigned long state,unsigned long type, unsigned 
 
 
 void handle_irq(){
-    
+//   uint32_t irq = *IRQ_PENDING_1;
+//   switch (iqr)
+//    case (SYSTEm)
 }
