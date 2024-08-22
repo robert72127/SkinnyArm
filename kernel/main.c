@@ -15,10 +15,12 @@ void main()
         uart_init();
         // say hello
         uart_puts("Hello World!\n");
-        // echo everything back
-        while(1) {
-            uart_send(uart_getc());
+        while (1)
+        {
+            char c= uart_getc();
+            uart_puts(&c);
         }
+        
     }
     // loop forever on all cores
     while(1);

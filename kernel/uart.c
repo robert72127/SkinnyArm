@@ -47,7 +47,7 @@ char uart_getc() {
     /* wait until something arrives in the buffer */
     while(! (*AUX_MU_LSR&0x01)) { spin();}
     /* read it and return */
-    r=(char)(*AUX_MU_IO);
+    r =  (char)(*AUX_MU_IO);
     /* convert carriage return to newline */
     return r=='\r'?'\n':r;
 }
@@ -55,18 +55,24 @@ char uart_getc() {
 void uart_puts(char *s) {
     while(*s) {
         /* convert newline to carriage return + newline */
-        if(*s=='\n')
-            uart_send('\r');
+       // if(*s=='\n')
+        //    uart_send('\r');
         uart_send(*s++);
     }
 }
 
 void uart_interrupt(void){
+    
     // check if interrupt pending
     if(*AUX_MU_IIR) {
         return;
     }
-
+    
+    // check if pending interrupts is for mini uart
+    if(*AUX_IRQ && 0x1) {
+        return;
+    }
+    // check if it's read
     if(*AUX_MU_IIR & 0x3){
         uint8_t c = uart_getc();
         uart_send(c);
