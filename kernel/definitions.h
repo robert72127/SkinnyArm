@@ -33,3 +33,6 @@ void disable_irq();
 
 // vm.c
 //void mmu_init();
+
+// string
+uint8_t strequal(uint8_t *str1, uint8_t *str2);
