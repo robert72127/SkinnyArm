@@ -36,6 +36,7 @@ void exception_handler(unsigned long state,unsigned long type, unsigned long esr
         case 0b101100: uart_puts("Floating point"); break;
         default: uart_puts("Unknown"); break;
     }
+    uart_puts(":\n");
     // decode data abort cause
     if(esr>>26==0b100100 || esr>>26==0b100101) {
         uart_puts(", ");
@@ -52,6 +53,7 @@ void exception_handler(unsigned long state,unsigned long type, unsigned long esr
             case 3: uart_puts(" at level 3"); break;
         }
     }
+    uart_puts(":\n");
     // dump registers
     /*
     uart_puts(":\n  ESR_EL1 ");

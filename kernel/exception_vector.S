@@ -2,7 +2,8 @@
     // for invalid entries go to invalid_entry handler and print message
     .macro handle_invalid_entry state type
 	kernel_entry
-	mov	x0, #\type // 0 - E1t, 1 - EL1h, 2 - EL0_64, 3 - EL0_32 
+	mov x0,  #\state
+	mov	x1, #\type // 0 - E1t, 1 - EL1h, 2 - EL0_64, 3 - EL0_32 
 	mrs	x2, esr_el1
 	mrs	x3, elr_el1
     mrs x4, spsr_el1
