@@ -7,7 +7,7 @@
 	mrs	x3, elr_el1
     mrs x4, spsr_el1
     mrs x5, far_el1
-	b	generic_exception_handler
+	b	exception_handler
 	kernel_exit
 	.endm
 
@@ -112,7 +112,7 @@ disable_irq:
 // in total we need 16  cases
 
 .global vectors
-
+.align 11 // must be aligned to 0x800
 vectors:
     // EL1t
     ventry	sync_invalid_el1t			// Synchronous EL1t

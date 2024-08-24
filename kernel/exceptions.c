@@ -3,7 +3,7 @@
 #include "definitions.h"
 #include "low_level.h"
 
-void generic_exception_handler(unsigned long state,unsigned long type, unsigned long esr, unsigned long elr, unsigned long spsr, unsigned long far)
+void exception_handler(unsigned long state,unsigned long type, unsigned long esr, unsigned long elr, unsigned long spsr, unsigned long far)
 {
     // print out state
     switch(state) {
@@ -69,7 +69,6 @@ void generic_exception_handler(unsigned long state,unsigned long type, unsigned 
     uart_puts("\n");
     */
     // no return from exception for now
-    while(1);
 }
 
 

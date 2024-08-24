@@ -4,6 +4,8 @@
 #include "low_level.h"
 
 __attribute__ ((aligned (16))) uint8_t kernel_stack[NCPU * 4096];
+// single user program with global stack for now
+__attribute__ ((aligned (16))) uint8_t user_stack[4096];
 
 void main()
 {
@@ -13,7 +15,10 @@ void main()
     if(cpu_id == 0){ 
         // set up serial console
         uart_init();
+        irq_vector_init();
         uart_puts("Hello World!\n");
+        
+        user_start();
         /*
         // say hello
         while (1)
