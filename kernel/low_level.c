@@ -12,3 +12,10 @@ uint8_t get_cpu_id(){
 void spin(){
     asm volatile("nop");
 }
+
+//void enable_interrupts(){}
+
+//void disable_interrupts(){}
+
+//void enable_timer();
+//void disable_timer();

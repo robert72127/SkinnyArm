@@ -13,13 +13,16 @@ void main()
     if(cpu_id == 0){ 
         // set up serial console
         uart_init();
-        // say hello
         uart_puts("Hello World!\n");
+        /*
+        // say hello
         while (1)
         {
             char c= uart_getc();
             uart_puts(&c);
         }
+
+        */
         
     }
     // loop forever on all cores

@@ -35,7 +35,7 @@ void uart_init()
     *AUX_MU_IER = 0x3; // enable TX, RX interrupts
 }
 
-void uart_send(unsigned int c) {
+void uart_send(uint8_t c) {
     /* wait until transmiter is empty and we can send */
     while(!(*AUX_MU_LSR & 0x20)){ spin();}
     /* write the character to the buffer */

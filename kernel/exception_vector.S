@@ -8,6 +8,7 @@
     mrs x4, spsr_el1
     mrs x5, far_el1
 	b	generic_exception_handler
+	kernel_exit
 	.endm
 
     // save and restore context
