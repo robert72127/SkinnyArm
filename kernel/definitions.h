@@ -18,11 +18,6 @@ uint64_t rand(uint64_t min, uint64_t max);
 int sd_init();
 int sd_readblock(uint32_t lba, uint8_t *buffer, uint32_t num);
 
-// delays.c
-void wait_cycles(unsigned int n);
-void wait_msec(unsigned int n);
-unsigned long get_system_timer();
-void wait_msec_st(unsigned int n);
 
 // irq.c
 void enable_intterrupt_controller();

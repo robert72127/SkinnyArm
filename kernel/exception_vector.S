@@ -1,5 +1,7 @@
 	
-    // for invalid entries go to invalid_entry handler and print message
+ #include "memory_map.h"
+
+	// for invalid entries go to invalid_entry handler and print message
     .macro handle_invalid_entry state type
 	kernel_entry
 	mov x0,  #\state
@@ -8,8 +10,9 @@
 	mrs	x3, elr_el1
     mrs x4, spsr_el1
     mrs x5, far_el1
-	b	exception_handler
+	bl	exception_handler
 	kernel_exit
+	eret
 	.endm
 
     // save and restore context
@@ -83,8 +86,18 @@ disable_irq:
     msr daifset, #2
     ret
 
-
-
+// per core timer interrupt enable in EL0 for now only for core 0
+#define CORE0_TIMER_IRQ_CTRL 0x40000040
+.global enable_timer_interrupt 
+enable_timer_interrupt:
+  mov x0, 1
+  msr cntp_ctl_el0, x0 // enable
+  mrs x0, cntfrq_el0
+  msr cntp_tval_el0, x0 // set expired time
+  mov x0, 0b10	// 0b10 this will enable timer interrupt for el0, and el1 
+  ldr x1, =CORE0_TIMER_IRQ_CTRL
+  str w0, [x1] // unmask timer interrupt
+  ret
 ////////////////////////////////////////////////////////////////////////////
 /// There are 4 types of exceptions:                                      //
 ////////////////////////////////////////////////////////////////////////////
@@ -142,9 +155,10 @@ sync_invalid_el1t:
 	handle_invalid_entry 0 0
 
 irq_exception_el1t:
-	kernel_entry 
-	bl	handle_irq
-	kernel_exit 
+	//kernel_entry 
+	//bl	handle_irq
+	//kernel_exit 
+	handle_invalid_entry  0 1
 
 fiq_invalid_el1t:
 	handle_invalid_entry  0 2
@@ -168,6 +182,12 @@ sync_invalid_el0_64:
 	handle_invalid_entry  2 0
 
 irq_invalid_el0_64:
+//	kernel_entry
+	// program to interrupt next time
+	bl tick
+	mrs x0, cntfrq_el0
+ 	msr cntp_tval_el0, x0
+	kernel_exit
 	handle_invalid_entry  2 1
 
 fiq_invalid_el0_64:

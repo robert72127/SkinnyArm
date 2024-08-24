@@ -3,21 +3,28 @@
 #include "definitions.h"
 #include "low_level.h"
 
-__attribute__ ((aligned (16))) uint8_t kernel_stack[NCPU * 4096];
+__attribute__((aligned(16))) uint8_t kernel_stack[NCPU * 4096];
 // single user program with global stack for now
-__attribute__ ((aligned (16))) uint8_t user_stack[4096];
+__attribute__((aligned(16))) uint8_t user_stack[4096];
+
+void tick()
+{
+    uart_puts("tick\n");
+}
 
 void main()
 {
     uint8_t cpu_id = get_cpu_id();
 
     // print hello world from core 0
-    if(cpu_id == 0){ 
+    if (cpu_id == 0)
+    {
+        enable_interrupts();
+        irq_vector_init();
         // set up serial console
         uart_init();
-        irq_vector_init();
         uart_puts("Hello World!\n");
-        
+        enable_timer_interrupt();
         user_start();
         /*
         // say hello
@@ -28,8 +35,8 @@ void main()
         }
 
         */
-        
     }
     // loop forever on all cores
-    while(1);
+    while (1)
+        ;
 }

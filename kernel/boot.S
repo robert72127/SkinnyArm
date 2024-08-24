@@ -39,9 +39,9 @@ set_el1:
     // Setup SCTLR access
     // disable instrucion cache
     // disable MMu
-    mov     x2, #0x0800
-    movk    x2, #0x30d0, lsl #16
-    msr     sctlr_el1, x2
+    //mov     x2, #0x0800
+    //movk    x2, #0x30d0, lsl #16
+    // msr     sctlr_el1, x2
     // change execution level to EL1, return to set_stack
     mov     x2, #0x3c5
     msr     spsr_el2, x2

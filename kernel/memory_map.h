@@ -67,8 +67,13 @@
 #define DISABLE_IRQS_1		((volatile unsigned int*)(MMIO_BASE+0x0000B21C))
 #define DISABLE_IRQS_2		((volatile unsigned int*)(MMIO_BASE+0x0000B220))
 #define DISABLE_BASIC_IRQS	((volatile unsigned int*)(MMIO_BASE+0x0000B224))
-#define CORE0_IRQ_SRC		((volatile unsigned int*)(0x40000060))
 #define LOCAL_TIMER_IRQ		(1 << 11)
+
+// Core timer interrupts
+#define CORE0_TIMER_IRQ_CTRL ((volatile unsigned int*)(0x40000040) )
+#define CORE1_TIMER_IRQ_CTRL ((volatile unsigned int*)(0x40000044) )
+#define CORE2_TIMER_IRQ_CTRL ((volatile unsigned int*)(0x40000048) )
+#define CORE3_TIMER_IRQ_CTRL ((volatile unsigned int*)(0x4000004C) )
 
 
 // random number generator, used in scheduler

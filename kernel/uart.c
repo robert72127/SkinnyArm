@@ -14,23 +14,7 @@ void uart_init()
     *AUX_MU_LCR = 3;       // set data size 8 bits
     *AUX_MU_MCR = 0;       // dont need auto flow control
     *AUX_MU_BAUD = 270;    // 115200 baud
-    *AUX_MU_IIR = 0xc6;    // disable interrupts
-    
-    /* map UART1 to GPIO pins */
-    r=*GPFSEL1;
-    r&=~((7<<12)|(7<<15)); // gpio14, gpio15
-    r|=(2<<12)|(2<<15);    // alt5
-    *GPFSEL1 = r;
-    *GPPUD = 0;            // enable pins 14 and 15
-    r=150; 
-    while(r--) { spin(); }
-   
-    *GPPUDCLK0 = (1<<14)|(1<<15);
-    r=150; 
-    while(r--) { spin(); }
-    *GPPUDCLK0 = 0;        // flush GPIO setup
-    
-
+    *AUX_MU_IIR = 0x6;    // disable interrupts
     *AUX_MU_CNTL = 3;    // enable Tx, Rx
     *AUX_MU_IER = 0x3; // enable TX, RX interrupts
 }
