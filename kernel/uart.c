@@ -52,7 +52,7 @@ char uart_getc() {
     return r=='\r'?'\n':r;
 }
 
-void uart_puts(char *s) {
+void uart_puts(uint8_t *s) {
     while(*s) {
         /* convert newline to carriage return + newline */
        // if(*s=='\n')

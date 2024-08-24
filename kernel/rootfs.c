@@ -56,6 +56,7 @@ struct file{
 };
 
 uint8_t MAGIC[] = "070701";
+uint8_t END[] = "TRAILER!!!";
 
 #define FILE_COUNT 256
 #define INODE_COUNT 256
@@ -82,6 +83,17 @@ int check_magic(uint8_t *byte_stream){
     return 0;
 }
 
+int check_end_archive(uint8_t *bytestream){
+    uint8_t *local_bt = bytestream;
+    for(int i = 0; i < 10; i++){
+        if(*local_bt != END[i]){
+            return 0;
+        }
+        local_bt++;
+    }
+    return 1;
+}
+
 uint8_t c_dev[8];
 uint8_t c_ino[8];
 uint8_t c_mode[6];
@@ -90,7 +102,7 @@ uint8_t filesize[8];
 uint8_t parent_filename[16];
 uint8_t filename[16];
 
-void init_ramfs(){
+int init_ramfs(){
     uint8_t findex=0;
     uint8_t iindex=0;
     struct file *current_file = &files[0];
@@ -172,6 +184,12 @@ void init_ramfs(){
 
         // skip / in saved name , and add appropriately as child to parent node
         uint64_t filename_size = *(uint64_t*)(&c_namesize);
+        //check once if name is "TRAILER!!!" is so it's end of archive
+        // don't modify pointer
+        if(check_end_archive(byte_stream)){
+            return 0;
+        }
+
         uint8_t current_name_index;
         for(int i = 0; i < filename_size; i++){
             if(*byte_stream == '/'){
@@ -200,7 +218,7 @@ void init_ramfs(){
         
         current_file->next_file = NULL;
         // save parent
-        if(search_file(&parent_filename, current_file->parent)){
+        if(search_file(parent_filename, current_file->parent)){
             // find last sibiling file and set this file as next
             struct file *sibiling = current_file->parent->children;
             if(sibiling == NULL){
@@ -212,7 +230,6 @@ void init_ramfs(){
                 }
                 sibiling->next_file = current_file;
             }
-
         }
 
         // switch filetype
@@ -289,7 +306,7 @@ int ls(uint8_t *filepath){
         return -1;
     }
     while(current_file != NULL){
-        printf(current_file->file_name);
+        uart_puts(current_file->file_name);
         current_file =  current_file->next_file;
     }
     return 0;
