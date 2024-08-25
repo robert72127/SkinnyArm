@@ -35,7 +35,29 @@ void vmem_init(
 }
 
 // clear page
+void clear_page(struct PageFrame *page){
+    page->next = NULL;
+    for(int i = 0; i < PageSize- sizeof(struct Pageframe*); i++){
+        page->data[i] = 0;
+    }
+}
 
-// add page
+// add page in front of ll
+void add_page(struct PageFrame *page){
+    clear_page(page);
+    struct PageFrame *previous_head = page_frame_linked_list;
+    page_frame_linked_list = page;
+    page->next = page_frame_linked_list;
+}
 
 // get page
+int get_page(struct PageFrame *page){
+    struct PageFrame *previous_head = page_frame_linked_list;
+    if(previous_head == NULL){
+        return -1;
+    }
+    page_frame_linked_list = previous_head->next;
+    clear_page(previous_head);
+    page = previous_head;
+    return 0;
+}
