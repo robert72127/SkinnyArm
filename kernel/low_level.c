@@ -13,22 +13,30 @@ void spin(){
     asm volatile("nop");
 }
 
+void irq_vector_init(){
+    __asm__ volatile(
+        "adr x0, vector\n"
+        "msr vbar_el1,x0"
+        :
+        :
+        : "x0"
+    );
+}
+
 
 void enable_interrupts(){
     __asm__ volatile(
-        "msr DAIFClr, 0xf"
+        "msr daifClr, 0xf"
     );
 }
 void disable_interrupts(){
     __asm__ volatile(
-        "msr DAIFset, 0xf"
+        "msr daifset, 0xf"
     );
 }
 
 
-//void disable_interrupts(){}
-
-/*
+// per core timer interrupt
 void enable_timer_interrupt(){
     uint8_t cpu_id = get_cpu_id();
     volatile uint32_t *cpu_control_reg_addr;
@@ -58,7 +66,6 @@ void enable_timer_interrupt(){
         : 
         : "x0" 
     );
-   *cpu_control_reg_addr = 2;  
+   *cpu_control_reg_addr = 2;  // 0b10 this will enable timer interrupt for el0, and el1 
 }
-*/
 //void disable_timer();

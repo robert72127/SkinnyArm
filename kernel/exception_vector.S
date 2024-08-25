@@ -68,36 +68,7 @@
 // must be aligned to 2^11
 
 
-//// irq
-.global irq_vector_init
-irq_vector_init:
-    // load VBAR_EL1 with virtual vector table address
-    adr x0, vectors
-    msr vbar_el1, x0 
-    ret
 
-.global enable_irq
-enable_irq:
-    msr daifclr, #2
-    ret
-
-.global disable_irq
-disable_irq:
-    msr daifset, #2
-    ret
-
-// per core timer interrupt enable in EL0 for now only for core 0
-#define CORE0_TIMER_IRQ_CTRL 0x40000040
-.global enable_timer_interrupt 
-enable_timer_interrupt:
-  mov x0, 1
-  msr cntp_ctl_el0, x0 // enable
-  mrs x0, cntfrq_el0
-  msr cntp_tval_el0, x0 // set expired time
-  mov x0, 0b10	// 0b10 this will enable timer interrupt for el0, and el1 
-  ldr x1, =CORE0_TIMER_IRQ_CTRL
-  str w0, [x1] // unmask timer interrupt
-  ret
 ////////////////////////////////////////////////////////////////////////////
 /// There are 4 types of exceptions:                                      //
 ////////////////////////////////////////////////////////////////////////////
@@ -125,9 +96,9 @@ enable_timer_interrupt:
 
 // in total we need 16  cases
 
-.global vectors
+.global vector
 .align 11 // must be aligned to 0x800
-vectors:
+vector:
     // EL1t
     ventry	sync_invalid_el1t			// Synchronous EL1t
 	ventry	irq_exception_el1t			// IRQ EL1t

@@ -19,13 +19,15 @@ void main()
     // print hello world from core 0
     if (cpu_id == 0)
     {
-        enable_interrupts();
         irq_vector_init();
+        // enable interrupts for el0
+        //enable_interrupts();
         // set up serial console
         uart_init();
         uart_puts("Hello World!\n");
         enable_timer_interrupt();
         user_start();
+       
         /*
         // say hello
         while (1)
@@ -33,7 +35,6 @@ void main()
             char c= uart_getc();
             uart_puts(&c);
         }
-
         */
     }
     // loop forever on all cores
