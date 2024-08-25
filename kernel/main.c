@@ -21,14 +21,14 @@ void main()
     {
         irq_vector_init();
         // enable interrupts for el0
-        //enable_interrupts();
+        enable_interrupts();
         // set up serial console
         uart_init();
-        uart_puts("Hello World!\n");
-        enable_timer_interrupt();
-        user_start();
+      //  uart_puts("Hello World!\n");
+        //enable_timer_interrupt();
+        //user_start();
        
-        /*
+       /* 
         // say hello
         while (1)
         {

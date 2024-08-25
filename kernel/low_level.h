@@ -12,6 +12,3 @@ void enable_interrupts();
 void disable_interrupts();
 int enable_timer_interrupt();
 
-
-//void enable_timer();
-//void disable_timer();

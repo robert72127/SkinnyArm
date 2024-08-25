@@ -14,9 +14,13 @@ void uart_init()
     *AUX_MU_LCR = 3;       // set data size 8 bits
     *AUX_MU_MCR = 0;       // dont need auto flow control
     *AUX_MU_BAUD = 270;    // 115200 baud
-    *AUX_MU_IIR = 0x6;    // disable interrupts
-    *AUX_MU_CNTL = 3;    // enable Tx, Rx
-    *AUX_MU_IER = 0x3; // enable TX, RX interrupts
+    *AUX_MU_IIR = 0x6;    // enable interrupts
+    *AUX_MU_CNTL = 1;    // enable Tx, Rx
+
+    // uart irq
+    *AUX_MU_IER = 0b10; // enable TX, RX interrupts
+    *ENABLE_IRQS_1 |= 1 << 29; // set bit 29
+
 }
 
 void uart_send(uint8_t c) {
@@ -25,16 +29,30 @@ void uart_send(uint8_t c) {
     /* write the character to the buffer */
     *AUX_MU_IO=c;
 }
-
+/*
+char uart_getc() {
+    char r;
+    // wait until something arrives in the buffer 
+    while(! (*AUX_MU_LSR&0x01)) { spin();}
+    // read it and return 
+    r =  (char)(*AUX_MU_IO);
+    // convert carriage return to newline 
+    return r=='\r'?'\n':r;
+}
+*/
 char uart_getc() {
     char r;
     /* wait until something arrives in the buffer */
-    while(! (*AUX_MU_LSR&0x01)) { spin();}
+    if((*AUX_MU_LSR&0x01)){
+
     /* read it and return */
     r =  (char)(*AUX_MU_IO);
     /* convert carriage return to newline */
     return r=='\r'?'\n':r;
+    }
+    else return -1;
 }
+
 
 void uart_puts(uint8_t *s) {
     while(*s) {

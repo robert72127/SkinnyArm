@@ -19,11 +19,6 @@ int sd_init();
 int sd_readblock(uint32_t lba, uint8_t *buffer, uint32_t num);
 
 
-// irq.c
-void enable_intterrupt_controller();
-void irq_vector_init();
-void enable_irq();
-void disable_irq();
 
 
 // vm.c
