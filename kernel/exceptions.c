@@ -75,33 +75,10 @@ void exception_handler(unsigned long state,unsigned long type, unsigned long esr
 
 
 void handle_irq(){
- //uint32_t irq_req = *IRQ_PENDING_1;
-
- //switch (irq_req)
-    //uart
- //   case (SYSTEm)
-    /*
-    while(uart_irq_pending){
-        char chr =  uart_getc();
-        while (chr != -1 && chr != 0)
-            uart_send(chr);
-    }
-    */
-    
-    uint32_t iir = *AUX_MU_IIR;
-    char c;
     // check if pending interrupts is for mini uart
-    // check if it's read
     if(*AUX_IRQ && 0x1) {
-        if( iir & 0b100){
-          c = uart_getc();
-          while( c != 255 ){
-            uart_send(c);
-            c = uart_getc();
-          }
-        }
-    
-        // reset interrupt pending
+        uart_interrupt();
     }
+    // reset interrupt pending
     *AUX_MU_IIR &= 0b001;
 }

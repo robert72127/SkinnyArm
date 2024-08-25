@@ -2,6 +2,7 @@
 
 // uart.c
 void uart_init();
+void uart_interrupt();
 void uart_send(uint8_t c);
 char uart_getc();
 void uart_puts(uint8_t *s);

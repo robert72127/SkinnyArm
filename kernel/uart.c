@@ -64,22 +64,14 @@ void uart_puts(uint8_t *s) {
 }
 
 void uart_interrupt(void){
-    
-    // check if interrupt pending
-    if(*AUX_MU_IIR) {
-        return;
-    }
-    
-    // check if pending interrupts is for mini uart
-    if(*AUX_IRQ && 0x1) {
-        return;
-    }
+    uint32_t iir = *AUX_MU_IIR;
+    char c;
     // check if it's read
-    if(*AUX_MU_IIR & 0x3){
-        uint8_t c = uart_getc();
-        uart_send(c);
+    if( iir & 0b100){
+          c = uart_getc();
+          while( c != 255 ){
+            uart_send(c);
+            c = uart_getc();
+          }
     }
-   
-    // reset interrupt pending
-    *AUX_MU_IIR |= 0x1;
 }
