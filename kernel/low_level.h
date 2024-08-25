@@ -2,7 +2,9 @@
 
 #include "types.h"
 
-#define NULL 0
+#ifndef NULL
+#define NULL ((void*)0)
+#endif
 
 uint8_t get_cpu_id();
 

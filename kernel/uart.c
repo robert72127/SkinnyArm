@@ -29,8 +29,8 @@ void uart_send(uint8_t c) {
     /* write the character to the buffer */
     *AUX_MU_IO=c;
 }
-/*
-char uart_getc() {
+
+char uart_getc_sync() {
     char r;
     // wait until something arrives in the buffer 
     while(! (*AUX_MU_LSR&0x01)) { spin();}
@@ -39,7 +39,7 @@ char uart_getc() {
     // convert carriage return to newline 
     return r=='\r'?'\n':r;
 }
-*/
+
 char uart_getc() {
     char r;
     /* wait until something arrives in the buffer */

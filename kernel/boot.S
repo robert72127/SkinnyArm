@@ -9,8 +9,8 @@ _start:
     ldr     x2, =__bss_size
 clear_bss:
     cbz     x2, start_cores
-    str     xzr, [x1], #8
-    sub     x2, x2, #8
+    str     xzr, [x1], #16
+    sub     x2, x2, #16
     cbnz    x2, clear_bss
 
     // other cores are stopped by firmware,

@@ -7,6 +7,9 @@ void uart_send(uint8_t c);
 char uart_getc();
 void uart_puts(uint8_t *s);
 
+// vm.c
+void vmem_init();
+
 // rand.c
 void rand_init();
 uint64_t rand(uint64_t min, uint64_t max);
@@ -22,8 +25,6 @@ int sd_readblock(uint32_t lba, uint8_t *buffer, uint32_t num);
 
 
 
-// vm.c
-//void mmu_init();
 
 // string
 uint8_t strequal(uint8_t *str1, uint8_t *str2);

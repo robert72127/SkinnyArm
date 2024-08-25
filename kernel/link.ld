@@ -10,9 +10,12 @@ SECTIONS
         __bss_start = .;
         *(.bss .bss.*)
         *(COMMON)
+        . = ALIGN(16);
         __bss_end = .;
     }
     _end = .;
+    /* align to mage size */
+    _vmem_start = ALIGN(0x1000);
    /* /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) } */
 }
-__bss_size = (__bss_end - __bss_start)>>3;
+__bss_size = (__bss_end - __bss_start);
