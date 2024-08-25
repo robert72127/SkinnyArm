@@ -23,7 +23,6 @@ void irq_vector_init(){
     );
 }
 
-
 void enable_interrupts(){
     __asm__ volatile(
         "msr daifClr, 0xf"
@@ -37,24 +36,16 @@ void disable_interrupts(){
 
 
 // per core timer interrupt
-void enable_timer_interrupt(){
+int enable_timer_interrupt(){
     uint8_t cpu_id = get_cpu_id();
     volatile uint32_t *cpu_control_reg_addr;
     switch (cpu_id)
     {
-    case 0:
-        cpu_control_reg_addr = CORE0_TIMER_IRQ_CTRL;
-        break;
-     case 1:
-        cpu_control_reg_addr = CORE1_TIMER_IRQ_CTRL;
-        break;
-     case 2:
-        cpu_control_reg_addr = CORE2_TIMER_IRQ_CTRL;
-        break;
-     case 3:
-        cpu_control_reg_addr = CORE3_TIMER_IRQ_CTRL;
-        break;
-    default:
+    case 0: cpu_control_reg_addr = CORE0_TIMER_IRQ_CTRL; break;
+    case 1: cpu_control_reg_addr = CORE1_TIMER_IRQ_CTRL; break;
+    case 2: cpu_control_reg_addr = CORE2_TIMER_IRQ_CTRL; break;
+    case 3:cpu_control_reg_addr = CORE3_TIMER_IRQ_CTRL; break;
+    default: return -1;
     }
 
     __asm__ volatile(
@@ -67,5 +58,6 @@ void enable_timer_interrupt(){
         : "x0" 
     );
    *cpu_control_reg_addr = 2;  // 0b10 this will enable timer interrupt for el0, and el1 
+    return 0;
 }
 //void disable_timer();

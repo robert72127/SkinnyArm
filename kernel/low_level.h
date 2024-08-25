@@ -10,7 +10,7 @@ void spin();
 void irq_vector_init();
 void enable_interrupts();
 void disable_interrupts();
-void enable_timer_interrupt();
+int enable_timer_interrupt();
 
 
 //void enable_timer();
