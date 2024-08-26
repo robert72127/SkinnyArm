@@ -19,6 +19,7 @@ struct PageFrame *page_frame_linked_list;
 
 void vmem_init(
 ){
+    uint64_t num_pages = 0;
 
     char *current_address = vmem_start;
     struct PageFrame *current_frame, *previous_frame = NULL;
@@ -30,12 +31,13 @@ void vmem_init(
         }
         current_address += PageSize;
         previous_frame = current_frame;
+        num_pages++;
     }
     current_frame->next = NULL;
 }
 
 // clear page
-void clear_page(struct PageFrame *page){
+static void clear_page(struct PageFrame *page){
     page->next = NULL;
     for(int i = 0; i < PageSize- sizeof(struct Pageframe*); i++){
         page->data[i] = 0;
@@ -43,7 +45,7 @@ void clear_page(struct PageFrame *page){
 }
 
 // add page in front of ll
-void add_page(struct PageFrame *page){
+void free_page(struct PageFrame *page){
     clear_page(page);
     struct PageFrame *previous_head = page_frame_linked_list;
     page_frame_linked_list = page;
@@ -51,7 +53,7 @@ void add_page(struct PageFrame *page){
 }
 
 // get page
-int get_page(struct PageFrame *page){
+int alloc_page(struct PageFrame *page){
     struct PageFrame *previous_head = page_frame_linked_list;
     if(previous_head == NULL){
         return -1;

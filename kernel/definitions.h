@@ -8,7 +8,11 @@ char uart_getc();
 void uart_puts(uint8_t *s);
 
 // vm.c
+struct PageFrame;
 void vmem_init();
+void free_page(struct  PageFrame *page);
+int alloc_page(struct PageFrame *page);
+
 
 // rand.c
 void rand_init();
