@@ -76,9 +76,33 @@ void exception_handler(unsigned long state,unsigned long type, unsigned long esr
 
 void handle_irq(){
     // check if pending interrupts is for mini uart
-    if(*AUX_IRQ && 0x1) {
+    // and it's read interrupt
+    if (*AUX_IRQ & 0x1  && (*AUX_MU_IIR &0b100) ) {
         uart_interrupt();
     }
+    
+    uint8_t cpu_id = get_cpu_id();
+    uint32_t *corex_irq_src;
+    switch (cpu_id){
+    case 0: corex_irq_src = CORE0_IRQ_SRC;break;
+    case 1: corex_irq_src = CORE1_IRQ_SRC;break;
+    case 2: corex_irq_src = CORE2_IRQ_SRC;break;
+    case 3: corex_irq_src = CORE3_IRQ_SRC;break;}
+
+    // bit 11 is set if source of irq is timer
+    if (*corex_irq_src & 0b10) {
+        tick();
+        __asm__ volatile(
+        // reprogram timer
+	    "mrs x0, cntfrq_el0\n"
+ 	    "msr cntp_tval_el0, x0\n"
+        :
+        :
+        : "x0"
+        );
+    }
+    
     // reset interrupt pending
     *AUX_MU_IIR &= 0b001;
 }
+

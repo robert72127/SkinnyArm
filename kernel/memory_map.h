@@ -74,6 +74,11 @@
 #define CORE1_TIMER_IRQ_CTRL ((volatile unsigned int*)(0x40000044) )
 #define CORE2_TIMER_IRQ_CTRL ((volatile unsigned int*)(0x40000048) )
 #define CORE3_TIMER_IRQ_CTRL ((volatile unsigned int*)(0x4000004C) )
+#define CORE0_IRQ_SRC ((volatile unsigned int*)(0x40000060) )
+#define CORE1_IRQ_SRC ((volatile unsigned int*)(0x40000064) )
+#define CORE2_IRQ_SRC ((volatile unsigned int*)(0x40000068) )
+#define CORE3_IRQ_SRC ((volatile unsigned int*)(0x4000006C) )
+
 
 
 // random number generator, used in scheduler

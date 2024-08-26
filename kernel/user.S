@@ -9,8 +9,8 @@ user_start:
     // 9-6 we want to disable only fiq so we set bit 6 to 1, 
     // 5-4 execution state will be aarch64 so we leave 00
     // 3-0 0000 for EL0t
-    mov     x2, #0x340 // this is fucking important cause setting it to 3f0 would disable irq, which we try to enable
-    msr     spsr_el1, x2
+    //mov     x2, #0x340 // this is fucking important cause setting it to 3f0 would disable irq, which we try to enable
+    //msr     spsr_el1, x2
     // set user stack
     adr     x2, user_program
     msr     elr_el1, x2

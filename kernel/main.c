@@ -11,7 +11,7 @@ extern char _end;
 
 void tick()
 {
-    uart_puts("tick\n");
+    // uart_puts("tick\n");
 }
 
 void main()
@@ -21,24 +21,28 @@ void main()
     // print hello world from core 0
     if (cpu_id == 0)
     {
-        vmem_init();
+        // vmem_init();
         irq_vector_init();
-        // enable interrupts for el0
+        // enable all kinds interrupts for el0
         enable_interrupts();
         // set up serial console
-        uart_init();
-        uart_puts("Hello World!\n");
-        //enable_timer_interrupt();
-        //user_start();
-       
-       /* 
-        // say hello
-        while (1)
-        {
-            char c= uart_getc();
-            uart_puts(&c);
-        }
-        */
+       // uart_init();
+       // uart_puts("Hello World!\n");
+        enable_timer_interrupt();
+
+        // uncomment to enable user timer interrupt with demo user code
+        // this function needs general enable_timer_interrupt to work
+        user_timer_interrputs_enable();
+        user_start();
+
+        /*
+         // say hello
+         while (1)
+         {
+             char c= uart_getc();
+             uart_puts(&c);
+         }
+         */
     }
     // loop forever on all cores
     while (1)

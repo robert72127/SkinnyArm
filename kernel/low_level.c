@@ -25,12 +25,23 @@ void irq_vector_init(){
 
 void enable_interrupts(){
     __asm__ volatile(
-        "msr daifClr, 0xf"
+        "msr daifclr, 0xf"
     );
 }
 void disable_interrupts(){
     __asm__ volatile(
         "msr daifset, 0xf"
+    );
+}
+
+void user_timer_interrputs_enable(){
+    __asm__ volatile(
+        // 3 means we will return to 
+    "mov     x2, #0x340\n" // this is fucking important cause setting it to 3f0 would disable irq, which we try to enable
+    "msr     spsr_el1, x2\n"
+    :
+    :
+    : "x2"
     );
 }
 
@@ -57,7 +68,7 @@ int enable_timer_interrupt(){
         : 
         : "x0" 
     );
-   *cpu_control_reg_addr = 2;  // 0b10 this will enable timer interrupt for el0, and el1 
+   *cpu_control_reg_addr = 2;  // 0b10 el1 ncntpnsirq exception level 1 non secure
     return 0;
 }
 //void disable_timer();

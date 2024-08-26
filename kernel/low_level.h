@@ -14,3 +14,6 @@ void enable_interrupts();
 void disable_interrupts();
 int enable_timer_interrupt();
 
+
+void user_timer_interrputs_enable();
+
