@@ -90,20 +90,22 @@ static int64_t int_from_char(char c){
             default:return -1;}  
 }
 static int64_t int_from_string(char *string, int size){
+    char *byte_stream = string;
     uint64_t total = 0;
     if(size == 0){
         return total;
     } 
-    total = int_from_char(*string);
+    total = int_from_char(*byte_stream);
+    byte_stream++;
     if (total == -1){
         return -1;
     }
 
     uint64_t current;
     for(int i = 1; i < size; i++){
-        current = int_from_char(*string);
+        current = int_from_char(*byte_stream);
         if(current == -1){ return current;}
-        string++;
+        byte_stream++;
         total = total * 10 + current;
     }
     return total;
@@ -120,7 +122,7 @@ enum FILETYPE get_file_type(char * arr){
         return REGULAR;
     }
     i = 0;
-    for(int i = 0; i < 4; i ++){
+    for(; i < 4; i ++){
         if (arr[i] != DIR_IDENT[i]){
             break;
         }
@@ -252,48 +254,6 @@ int init_ramfs(){
             return 0;
         }
 
-        uint8_t current_name_index;
-        for(int i = 0; i < filename_size; i++){
-            if(*byte_stream == '/'){
-                for(int j = 0; j < current_name_index; j++){
-                    parent_filename[j] = filename[j];
-                    filename[j] = '0';
-                }
-            }
-            if(*byte_stream == '\n'){
-                filename[current_name_index] = *byte_stream;
-                break;
-            }
-
-            filename[current_name_index % MAX_FILENAME_SIZE] = *byte_stream;
-            byte_stream++;
-        }
-
-        // then data which is padded to multiple of four bytes
-        byte_stream += ((file_size + 3) / 4)  * 4;
-
-
-        // save info about current file and continue parsing
-        for(int i = 0; i < MAX_FILENAME_SIZE; i++){
-            current_file->file_name[i] = filename[i];
-        }
-        
-        current_file->next_file = NULL;
-        // save parent
-        if(search_file(parent_filename, current_file->parent)){
-            // find last sibiling file and set this file as next
-            struct file *sibiling = current_file->parent->children;
-            if(sibiling == NULL){
-                current_file->parent->children = current_file;
-            }
-            else{
-                while(sibiling->next_file != NULL){
-                    sibiling = sibiling->next_file;
-                }
-                sibiling->next_file = current_file;
-            }
-        }
-        
         // switch filetype
         enum FILETYPE filetype = get_file_type(c_mode+4);
         switch (filetype)
@@ -325,6 +285,54 @@ int init_ramfs(){
             current_file->type = INVALID;
             return -1;
         }
+        
+        uint8_t current_name_index = 0;
+        for(int i = 0; i < filename_size; i++){
+            if(*byte_stream == '/'){
+                for(int j = 0; j < current_name_index; j++){
+                    parent_filename[j] = filename[j];
+                    filename[j] = '0';
+                }
+                current_name_index = 0;
+            }
+            if(*byte_stream == '\n'){
+                filename[current_name_index] = *byte_stream;
+                break;
+            }
+
+            filename[current_name_index % MAX_FILENAME_SIZE] = *byte_stream;
+            byte_stream++;
+            current_name_index++;
+        }
+
+        // then data which is padded to multiple of four bytes
+        byte_stream += ((file_size + 3) / 4)  * 4;
+
+
+        // save info about current file and continue parsing
+        for(int i = 0; i < MAX_FILENAME_SIZE; i++){
+            current_file->file_name[i] = filename[i];
+        }
+        
+        current_file->next_file = NULL;
+        // save parent
+        if(search_file(parent_filename, current_file->parent)){
+            // find last sibiling file and set this file as next
+            struct file *sibiling = current_file->parent->children;
+            if(sibiling == NULL){
+                current_file->parent->children = current_file;
+            }
+            else{
+                while(sibiling->next_file != NULL){
+                    sibiling = sibiling->next_file;
+                }
+                sibiling->next_file = current_file;
+            }
+        }
+
+
+        //parse data and padding
+
         
         current_file = &files[++findex];
     }
