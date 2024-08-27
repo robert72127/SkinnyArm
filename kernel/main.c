@@ -26,8 +26,8 @@ void main()
         // enable all kinds interrupts for el0
         enable_interrupts();
         // set up serial console
-       // uart_init();
-       // uart_puts("Hello World!\n");
+        uart_init();
+        uart_puts("Hello World!\n");
         enable_timer_interrupt();
 
         // uncomment to enable user timer interrupt with demo user code

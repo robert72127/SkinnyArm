@@ -34,7 +34,6 @@ void uart_init()
 
     // uart irq
     *AUX_MU_IER = 0b10; // enable TX, RX interrupts
-    *ENABLE_IRQS_1 |= 1 << 29; // set bit 29
 
 }
 
