@@ -63,11 +63,11 @@ int enable_timer_interrupt(){
         "mov x0, 1\n"
         "msr cntp_ctl_el0, x0\n" // enable
         "mrs x0, cntfrq_el0\n"
-        "mov x1, 50\n"
+        "mov x1, 50\n" // make timer interrupts less frequent
         "lsr x0, x0, x1\n"
         "msr cntp_tval_el0, x0\n" // set expired time
-        : // no output operads
-        :  // time slice multiply so we wont interrupt every cntfrq_el0 cycle
+        : 
+        :  
         : "x0", "x1" 
     );
    *cpu_control_reg_addr = 2;  // 0b10 el1 ncntpnsirq exception level 1 non secure

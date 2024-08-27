@@ -13,6 +13,13 @@ void vmem_init();
 void free_page(struct  PageFrame *page);
 int alloc_page(struct PageFrame *page);
 
+// rootfs.c
+struct file;
+init_ramfs();
+int read(uint8_t *filename, uint32_t offset);
+int ls(uint8_t *filepath);
+int search_file(uint8_t *name, struct file *f);
+
 
 // rand.c
 void rand_init();

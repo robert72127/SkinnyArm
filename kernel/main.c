@@ -21,7 +21,8 @@ void main()
     // print hello world from core 0
     if (cpu_id == 0)
     {
-        // vmem_init();
+        init_ramfs();
+        vmem_init();
         irq_vector_init();
         // enable all kinds interrupts for el0
         enable_interrupts();
@@ -29,7 +30,6 @@ void main()
         uart_init();
         uart_puts("Hello World!\n");
         enable_timer_interrupt();
-
         // uncomment to enable user timer interrupt with demo user code
         // this function needs general enable_timer_interrupt to work
         user_timer_interrputs_enable();

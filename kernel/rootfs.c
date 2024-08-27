@@ -35,14 +35,19 @@ struct cpio_newc_header {
 
 struct inode{
     uint8_t *data;    
-    uint16_t inode_number;
-    uint16_t device_number;
+    uint64_t inode_number;
+    uint64_t device_number;
     uint32_t data_size;
 };
+
+const uint8_t DIR_IDENT[4] = {'4','1','E','D'};
+const uint8_t FILE_IDENT[4] = {'8','1','A','4'}; 
+enum FILETYPE {INVALID,DIRECTORY, REGULAR, };
 
 struct file{
     uint8_t file_name[16];
     struct file *parent; // points to parent node location
+    enum FILETYPE type;
     // points to next file at given level
     struct file *next_file;
     union // type_specific
@@ -52,11 +57,12 @@ struct file{
         // pointer to for hard links
         struct inode *ino;
     };
-    uint8_t file_kind; // 0 is directory, 1 is regular directory
 };
 
-uint8_t MAGIC[] = "070701";
-uint8_t END[] = "TRAILER!!!";
+const uint8_t MAGIC[6] = {'0','7','0','7','0','1'};
+const uint8_t END[10] = {'T','R','A','I','L','E','R', '!', '!', '!'};
+
+
 
 #define FILE_COUNT 256
 #define INODE_COUNT 256
@@ -67,7 +73,63 @@ uint8_t free_files;
 uint8_t free_inodes;
 
 
-static uint32_t ramfs_start = 0x8000000;
+#define RAMFS_START 0x8000000
+
+static int64_t int_from_char(char c){
+       switch (c){
+            case '0':return 0;
+            case '1':return 1;
+            case '2':return 2;
+            case '3':return 3;
+            case '4':return 4;
+            case '5':return 5;
+            case '6':return 6;
+            case '7':return 7;
+            case '8':return 8;
+            case '9':return 9;
+            default:return -1;}  
+}
+static int64_t int_from_string(char *string, int size){
+    uint64_t total = 0;
+    if(size == 0){
+        return total;
+    } 
+    total = int_from_char(*string);
+    if (total == -1){
+        return -1;
+    }
+
+    uint64_t current;
+    for(int i = 1; i < size; i++){
+        current = int_from_char(*string);
+        if(current == -1){ return current;}
+        string++;
+        total = total * 10 + current;
+    }
+    return total;
+}
+
+enum FILETYPE get_file_type(char * arr){
+    int i = 0;
+    for(; i < 4; i ++){
+        if (arr[i] != FILE_IDENT[i]){
+            break;
+        }
+    }
+    if (i == 4){
+        return REGULAR;
+    }
+    i = 0;
+    for(int i = 0; i < 4; i ++){
+        if (arr[i] != DIR_IDENT[i]){
+            break;
+        }
+    }
+    if (i == 4){
+        return DIRECTORY;
+    }
+    return INVALID;
+}
 
 
 int search_file(uint8_t *name, struct file *f);
@@ -96,7 +158,7 @@ int check_end_archive(uint8_t *bytestream){
 
 uint8_t c_dev[8];
 uint8_t c_ino[8];
-uint8_t c_mode[6];
+uint8_t c_mode[8];
 uint8_t c_namesize[8];
 uint8_t filesize[8];
 uint8_t parent_filename[16];
@@ -108,7 +170,7 @@ int init_ramfs(){
     struct file *current_file = &files[0];
     struct inode *current_ino = &inodes[0];         
     
-    uint8_t *byte_stream = (uint8_t *)ramfs_start;
+    uint8_t *byte_stream = (uint8_t *)(RAMFS_START);
     while(1){
         // read magic, check if matches
         if(check_magic(byte_stream) == -1){
@@ -122,10 +184,10 @@ int init_ramfs(){
             byte_stream++;
         }
         // read ino save it into current ino
-        c_ino[0] = 0;
-        c_ino[1] = 0;
-        for(int i = 0; i < 6; i++){
-            c_ino[i+2] = *byte_stream;
+        // c_ino[0] = 0;
+        // c_ino[1] = 0;
+        for(int i = 0; i < 8; i++){
+            c_ino[i] = *byte_stream;
             byte_stream++;
         }
      
@@ -168,7 +230,7 @@ int init_ramfs(){
         }
 
         // c_namesize including trailing bytes save this
-        for(int i = 0; i < 32; i++){
+        for(int i = 0; i < 8; i++){
             c_namesize[i] = *byte_stream;
             byte_stream++;
         }
@@ -179,11 +241,11 @@ int init_ramfs(){
         }
 
         // then there is file name followed by nullbytes to so filename+header // 4
-        uint64_t file_size = *(uint64_t*)(&file_size);
+        int64_t file_size = int_from_string(&filesize, 8);
 
 
         // skip / in saved name , and add appropriately as child to parent node
-        uint64_t filename_size = *(uint64_t*)(&c_namesize);
+        int64_t filename_size = int_from_string(&c_namesize, 8);
         //check once if name is "TRAILER!!!" is so it's end of archive
         // don't modify pointer
         if(check_end_archive(byte_stream)){
@@ -231,19 +293,20 @@ int init_ramfs(){
                 sibiling->next_file = current_file;
             }
         }
-
+        
         // switch filetype
-        uint64_t filetype = *(uint64_t*)(&c_mode);
+        enum FILETYPE filetype = get_file_type(c_mode+4);
         switch (filetype)
         {
         // directory
-        case 0x40000:
-            current_file->file_kind = 0;
+        case DIRECTORY:
+            current_file->type = DIRECTORY;
             current_file->children = NULL;
             break;
-        case 0x100000 :
-            uint64_t device_nr = *(uint64_t*)(&c_dev);
-            uint64_t inode_nr = *(uint64_t*)(&c_ino);
+        case REGULAR:
+
+            uint64_t device_nr = *(uint64_t *)(&c_dev);
+            uint64_t inode_nr = *(uint64_t *)(&c_ino);
             // regular file with size 0 search for inode
             if(file_size == 0){
                 for(int i = 0; i < INODE_COUNT; i++){
@@ -257,8 +320,9 @@ int init_ramfs(){
                 current_ino->inode_number = inode_nr;
                 current_ino = &inodes[++iindex];         
             }
-            current_file->file_kind = 1;
+            current_file->type = REGULAR;
         default:
+            current_file->type = INVALID;
             return -1;
         }
         

@@ -15,7 +15,7 @@ OBJS += $(patsubst $(KERNELDIR)/*.S,  $(BUILDDIR)/*.o,  $(SRCS_S))
 
 ROOTFS := $(wildcard rootfs/*)
 
-all: kernel8.img
+all: kernel8.img rootfs
 
 .PHONY: run clean
 
@@ -35,10 +35,10 @@ kernel8.img:  $(OBJS)   $(KERNELDIR)/link.ld
 rootfs: $(ROOTFS)
 	find ./rootfs | cpio -o -H newc > rootfs.cpio	
 
-run: kernel8.img rootfs.cpio 
+run: kernel8.img rootfs 
 	$(QEMU) -M raspi3b -kernel kernel8.img -initrd rootfs.cpio -serial null -serial stdio 
 
-run-gdb: kernel8.img rootfs.cpio 
+run-gdb: kernel8.img rootfs 
 	$(QEMU) -M raspi3b -kernel kernel8.img  -initrd rootfs.cpio -serial null -serial stdio  -S -gdb tcp::1234  
 	# then we load :
 	# aarch64-none-linux-gnu-gdb build/kernel8.elf   
@@ -46,5 +46,6 @@ run-gdb: kernel8.img rootfs.cpio
 	# and we can start debugging
 
 clean:
-	rm -r $(BUILDDIR)/*
 	rm kernel8.img
+	rm -r $(BUILDDIR)/*
+	rm rootfs.cpio
