@@ -95,10 +95,12 @@ void handle_irq(){
         __asm__ volatile(
         // reprogram timer
 	    "mrs x0, cntfrq_el0\n"
+        "mov x1, 50\n"  // make timer interrupts less frequent
+        "lsr x0, x0, x1\n"
  	    "msr cntp_tval_el0, x0\n"
         :
         :
-        : "x0"
+        : "x0", "x1"
         );
     }
     
