@@ -16,6 +16,9 @@
 // see BCM2837-ARM-Peripherals.pdf
 // thank's to https://github.com/bztsrc/raspi3-tutorial
 
+
+#define RAMFS_START     0x8000000
+
 // page 6 of PDF
 #define MMIO_BASE       0x3F000000
 #define MMIO_END        0x3FFFFFFF

@@ -6,6 +6,12 @@
 #define NULL ((void*)0)
 #endif
 
+#define ROOTFS_FILE_COUNT 256
+#define ROOTFS_INODE_COUNT 256
+#define ROOTFS_MAX_FILENAME_SIZE 16
+
+#define PageSize 4096
+
 uint8_t get_cpu_id();
 
 void spin();

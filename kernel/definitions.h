@@ -9,7 +9,7 @@ void uart_puts(uint8_t *s);
 
 // vm.c
 struct PageFrame;
-void vmem_init();
+void vmem_init(uint8_t *hole_start, uint8_t *hole_end);
 void free_page(struct  PageFrame *page);
 int alloc_page(struct PageFrame *page);
 

@@ -3,7 +3,6 @@
 #include "definitions.h"
 #include "low_level.h"
 
-#define PageSize 4096
 extern char _vmem_start;
 const char *vmem_start =(char *)(&_vmem_start);
 const char *vmem_end = (char*)(MMIO_BASE);
@@ -17,14 +16,22 @@ struct PageFrame{
 
 struct PageFrame *page_frame_linked_list;
 
-void vmem_init(
-){
+// init vm skip rootfs space assume hole start and end 
+// are aligned to page size
+void vmem_init(uint8_t *hole_start, uint8_t *hole_end){
     uint64_t num_pages = 0;
 
     char *current_address = vmem_start;
     struct PageFrame *current_frame, *previous_frame = NULL;
    
     while(current_address <= vmem_end){
+
+        if(current_address == hole_start){
+            while(current_address < hole_end){
+                current_address += PageSize;
+            }
+        }
+        
         current_frame = (struct PageFrame *)(current_address);
         if(previous_frame != NULL) {
             previous_frame->next = current_frame;

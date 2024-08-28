@@ -64,16 +64,12 @@ const uint8_t END[10] = {'T','R','A','I','L','E','R', '!', '!', '!'};
 
 
 
-#define FILE_COUNT 256
-#define INODE_COUNT 256
-#define MAX_FILENAME_SIZE 16
-struct file files[FILE_COUNT];
-struct inode inodes[INODE_COUNT];
+struct file files[ROOTFS_FILE_COUNT];
+struct inode inodes[ROOTFS_INODE_COUNT];
 uint8_t free_files;
 uint8_t free_inodes;
 
 
-#define RAMFS_START 0x8000000
 
 static int64_t int_from_char(char c){
        switch (c){
@@ -171,7 +167,7 @@ uint8_t filesize[8];
 uint8_t parent_filename[16];
 uint8_t filename[16];
 
-int init_ramfs(){
+int init_ramfs(char ** bytestream_end){
     uint8_t findex=0;
     uint8_t iindex=0;
     struct file *current_file = &files[0];
@@ -243,6 +239,7 @@ int init_ramfs(){
 
         //check once if name is "TRAILER!!!" is so it's end of archive
         if(check_end_archive(byte_stream)){
+            *bytestream_end = byte_stream;
             return 0;
         }
 
@@ -261,7 +258,7 @@ int init_ramfs(){
             uint64_t inode_nr = *(uint64_t *)(&c_ino);
             // regular file with size 0 search for inode
             if(file_size == 0){
-                for(int i = 0; i < INODE_COUNT; i++){
+                for(int i = 0; i < ROOTFS_INODE_COUNT; i++){
                     if (inodes[i].device_number == device_nr && inodes[i].inode_number == inode_nr){
                         current_file->ino = &inodes[i];
                         break;
@@ -297,14 +294,14 @@ int init_ramfs(){
                 filename[current_name_index] = *byte_stream;
                 byte_stream++;
                 current_name_index++;
-                current_name_index %= MAX_FILENAME_SIZE;
+                current_name_index %= ROOTFS_MAX_FILENAME_SIZE;
             }
         }
 
 
 
         // save info about current file and continue parsing
-        for(int i = 0; i < MAX_FILENAME_SIZE; i++){
+        for(int i = 0; i < ROOTFS_MAX_FILENAME_SIZE; i++){
             current_file->file_name[i] = filename[i];
         }
         
@@ -347,7 +344,7 @@ int init_ramfs(){
 int search_file(uint8_t *name, struct file *f)
 {    
     struct file *current_file;
-    for(int i = 0; i < FILE_COUNT; i++){
+    for(int i = 0; i < ROOTFS_FILE_COUNT; i++){
         current_file = &files[i];
         if( strequal(current_file->file_name, name)){
             f = current_file;

@@ -21,8 +21,15 @@ void main()
     // print hello world from core 0
     if (cpu_id == 0)
     {
-        init_ramfs();
-        vmem_init();
+        uint8_t *rootfs_start = (char *)RAMFS_START;
+        uint8_t *rootfs_end;
+        if(init_ramfs(&rootfs_end) != 0){
+            rootfs_end = rootfs_start;
+        }
+        // add padding to rootfs_end
+        rootfs_end = (char *) (( (uint32_t)(rootfs_end + PageSize -1) / PageSize ) * PageSize);
+
+        vmem_init(rootfs_start, rootfs_end);
         irq_vector_init();
         // enable all kinds interrupts for el0
         enable_interrupts();
