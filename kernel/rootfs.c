@@ -87,6 +87,12 @@ static int64_t int_from_char(char c){
             case '7':return 7;
             case '8':return 8;
             case '9':return 9;
+            case 'A':return 10;
+            case 'B':return 11;
+            case 'C':return 12;
+            case 'D':return 13;
+            case 'E':return 14;
+            case 'F':return 15;
             default:return -1;}  
 }
 static int64_t int_from_string(char *string, int size){
@@ -106,7 +112,7 @@ static int64_t int_from_string(char *string, int size){
         current = int_from_char(*byte_stream);
         if(current == -1){ return current;}
         byte_stream++;
-        total = total * 10 + current;
+        total = total * 16 + current;
     }
     return total;
 }
@@ -148,20 +154,19 @@ int check_magic(uint8_t *byte_stream){
 }
 
 int check_end_archive(uint8_t *bytestream){
-    uint8_t *local_bt = bytestream;
     for(int i = 0; i < 10; i++){
-        if(*local_bt != END[i]){
+        if(*bytestream != END[i]){
             return 0;
         }
-        local_bt++;
+        bytestream++;
     }
     return 1;
 }
 
-uint8_t c_dev[8];
 uint8_t c_ino[8];
 uint8_t c_mode[8];
 uint8_t c_namesize[8];
+uint8_t c_devminor[8];
 uint8_t filesize[8];
 uint8_t parent_filename[16];
 uint8_t filename[16];
@@ -173,21 +178,15 @@ int init_ramfs(){
     struct inode *current_ino = &inodes[0];         
     
     uint8_t *byte_stream = (uint8_t *)(RAMFS_START);
+    uint8_t *file_start = byte_stream;
     while(1){
         // read magic, check if matches
         if(check_magic(byte_stream) == -1){
             return -1;
         } 
-        // read c_dev will be saved to inode (inodes are equal if same inode and dev number)
-        c_dev[0] = 0;
-        c_dev[1] = 0;
-        for(int i = 0; i < 6; i++){
-            c_dev[i+2] = *byte_stream;
-            byte_stream++;
-        }
+        byte_stream += 6;
+        
         // read ino save it into current ino
-        // c_ino[0] = 0;
-        // c_ino[1] = 0;
         for(int i = 0; i < 8; i++){
             c_ino[i] = *byte_stream;
             byte_stream++;
@@ -200,21 +199,11 @@ int init_ramfs(){
         }
 
         // read c_uid don't care about user owner
-        for(int i = 0; i < 8; i++){
-            byte_stream++;
-        }
         // read c_gid don;t care about group 
-        for(int i = 0; i < 8; i++){
-            byte_stream++;
-        }
         // read c_nlink number of links to this file, skip
-        for(int i = 0; i < 8; i++){
-            byte_stream++;
-        }
         //  c_mtime // modification time skip
-        for(int i = 0; i < 8; i++){
-            byte_stream++;
-        }
+        byte_stream +=32;
+
 
         // c_filesize - save this in inode, also use this to know when 
         // new file will get started
@@ -224,12 +213,17 @@ int init_ramfs(){
         }
 
         // c_devmajor skip
+        byte_stream += 8;
+
         // c_devminor skip 
-        // c_rdevmajor skip
-        // c_rdevminor skip 
-        for(int i = 0; i < 32; i++){
+        for(int i = 0; i < 8; i++){
+            c_devminor[i] = byte_stream;
             byte_stream++;
         }
+        // c_rdevmajor skip
+        // c_rdevminor skip 
+        byte_stream += 16;
+
 
         // c_namesize including trailing bytes save this
         for(int i = 0; i < 8; i++){
@@ -238,9 +232,7 @@ int init_ramfs(){
         }
 
         // c_check ignore
-        for(int i = 0; i < 8; i++){
-            byte_stream++;
-        }
+        byte_stream+=8;
 
         // then there is file name followed by nullbytes to so filename+header // 4
         int64_t file_size = int_from_string(&filesize, 8);
@@ -248,8 +240,8 @@ int init_ramfs(){
 
         // skip / in saved name , and add appropriately as child to parent node
         int64_t filename_size = int_from_string(&c_namesize, 8);
+
         //check once if name is "TRAILER!!!" is so it's end of archive
-        // don't modify pointer
         if(check_end_archive(byte_stream)){
             return 0;
         }
@@ -265,7 +257,7 @@ int init_ramfs(){
             break;
         case REGULAR:
 
-            uint64_t device_nr = *(uint64_t *)(&c_dev);
+            uint64_t device_nr = *(uint64_t *)(&c_devminor);
             uint64_t inode_nr = *(uint64_t *)(&c_ino);
             // regular file with size 0 search for inode
             if(file_size == 0){
@@ -281,6 +273,7 @@ int init_ramfs(){
                 current_ino = &inodes[++iindex];         
             }
             current_file->type = REGULAR;
+            break;
         default:
             current_file->type = INVALID;
             return -1;
@@ -291,22 +284,23 @@ int init_ramfs(){
             if(*byte_stream == '/'){
                 for(int j = 0; j < current_name_index; j++){
                     parent_filename[j] = filename[j];
-                    filename[j] = '0';
+                    filename[j] = '\0';
                 }
                 current_name_index = 0;
+                byte_stream++;
             }
-            if(*byte_stream == '\n'){
+            else if(*byte_stream == '\0'){
                 filename[current_name_index] = *byte_stream;
                 break;
             }
-
-            filename[current_name_index % MAX_FILENAME_SIZE] = *byte_stream;
-            byte_stream++;
-            current_name_index++;
+            else {
+                filename[current_name_index] = *byte_stream;
+                byte_stream++;
+                current_name_index++;
+                current_name_index %= MAX_FILENAME_SIZE;
+            }
         }
 
-        // then data which is padded to multiple of four bytes
-        byte_stream += ((file_size + 3) / 4)  * 4;
 
 
         // save info about current file and continue parsing
@@ -330,10 +324,18 @@ int init_ramfs(){
             }
         }
 
+        //filename + header size must be multiple of four bytes
+        // we perform this padding here
+        byte_stream = ((6 + 13 * 8 + filename_size + 3 ) / 4) * 4 + file_start; 
 
-        //parse data and padding
+        // then data is also padded to multiple of four
+        byte_stream = byte_stream + ((file_size + 3) / 4) * 4; 
 
-        
+        // then data which is padded to multiple of four bytes
+        //byte_stream += ((file_size + 23) / 24)  * 24;
+
+
+        file_start = byte_stream;
         current_file = &files[++findex];
     }
 
