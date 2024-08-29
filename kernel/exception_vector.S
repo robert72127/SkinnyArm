@@ -156,13 +156,6 @@ sync_invalid_el0_64:
 	handle_invalid_entry  2 0
 
 irq_invalid_el0_64:
-//	kernel_entry
-//	bl tick
-//	// this will reprogram interrupt
-//	mrs x0, cntfrq_el0
-// 	msr cntp_tval_el0, x0
-//	kernel_exit
-
 	kernel_entry
 	bl handle_irq
 	kernel_exit

@@ -17,7 +17,7 @@ struct PageFrame{
 struct PageFrame *page_frame_linked_list;
 
 // init vm skip rootfs space assume hole start and end 
-// are aligned to page size
+// are aligned to page size, if not overwrite them
 void vmem_init(uint8_t *hole_start, uint8_t *hole_end){
     uint64_t num_pages = 0;
 

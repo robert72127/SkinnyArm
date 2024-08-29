@@ -91,7 +91,8 @@ void handle_irq(){
 
     // bit 11 is set if source of irq is timer
     if (*corex_irq_src & 0b10) {
-        tick();
+        // switch user thread 
+        scheduler();
         __asm__ volatile(
         // reprogram timer
 	    "mrs x0, cntfrq_el0\n"

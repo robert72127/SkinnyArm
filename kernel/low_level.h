@@ -20,6 +20,8 @@ void enable_interrupts();
 void disable_interrupts();
 int enable_timer_interrupt();
 
+struct process;
+struct process* get_current_process();
 
 void user_timer_interrputs_enable();
 
