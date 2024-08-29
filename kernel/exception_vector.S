@@ -153,6 +153,8 @@ error_invalid_el1h:
 	handle_invalid_entry  1 3
 ////////////////////////////
 sync_invalid_el0_64:
+	// save user state in trap frame
+	// call syscall handler with syscall number
 	handle_invalid_entry  2 0
 
 irq_invalid_el0_64:

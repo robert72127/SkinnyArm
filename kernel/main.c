@@ -11,7 +11,7 @@ extern char _end;
 
 void tick()
 {
-    // uart_puts("tick\n");
+    uart_puts("SYSCALL\n");
 }
 
 void main()

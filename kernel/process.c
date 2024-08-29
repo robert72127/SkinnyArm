@@ -5,10 +5,6 @@
 #include "low_level.h"
 
 
-__attribute__((aligned(16))) uint8_t scheduler_stack[NCPU * 4096];
-
-
-
 // free process can be allocated by create_process
 enum ProcesState {FREE, RUNNING, RUNNABLE, WAITING, KILLED};
 
@@ -33,11 +29,15 @@ struct process{
     enum ProcesState state; // running runnable, waiting, killed
     struct PageFrame *stack_frame;
     // frame to store registers after context switch
-    struct PageFrame *reg_state_frame;
+    struct PageFrame *trap_frame;
 };
 
 #define PROCCNT 64
 struct process process_array[PROCCNT];
+
+////////////////////////////////////////////////////////////////
+////           Process creation and scheduling              ////
+////////////////////////////////////////////////////////////////
 
 // basically set stack, set registers state page
 // and jump to code_start_addr
@@ -112,7 +112,7 @@ int kill_process(uint8_t pid){
     proc->pid = 0;
     free_registers(proc);
     free_page(proc->stack_frame);
-    free_page(proc->reg_state_frame);
+    free_page(proc->trap_frame);
     proc->state = FREE; 
     return 0;
 }
@@ -140,3 +140,31 @@ void scheduler(){
         next_proc = &process_array[0];
     }
 }
+
+
+///////////////////////////////////////////////////////////////////
+////                        Syscalls                            ///
+///////////////////////////////////////////////////////////////////
+//
+// User call appropriate api, function with argument
+// then our function call svc instruction
+// this generates synchronous exception
+// this exception is handled by el1(kernel)
+// os then validates all args passed
+// performs action and return, which ensure that execution
+// will resume at ELO
+// right after svc
+//
+// so user is provided with wrappers that 
+// pass syscall number and args to kernel
+// and generates exception 
+
+
+    
+
+
+
+
+///////////////////////////////////////////////////////////////////
+////                          Signals                           ///
+///////////////////////////////////////////////////////////////////
