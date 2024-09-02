@@ -49,16 +49,22 @@ set_el1:
     msr     elr_el2, x2
     eret
 
+// our stack grown downward
+// therefore for each core we should set initial address to:
+// core_nr + 4095 or
+// (core_nr+1)*4096 - 1
 set_stack:
      mrs     x0, CurrentEL
     and     x0, x0, #12 // clear reserved bits
     # get cpu_id
     mrs     x0, mpidr_el1
     and     x0, x0, #3
+    add     x0, x0, 1
     // multipy x0 by 4096
     lsl     x0, x0, #12
     ldr     x1, =kernel_stack
     add     x1, x1, x0
+    sub     x1, x1, 1
     // set stack for each of the cores
     // at kernel_stack + 4096 * cpu_id
     mov     sp, x1
