@@ -136,7 +136,7 @@ enum FILETYPE get_file_type(char * arr){
 }
 
 
-int search_file(uint8_t *name, struct file *f);
+int search_file(uint8_t *name, struct file **f);
 
 // check if magic matches and moves byte stream by 6 bytes
 int check_magic(uint8_t *byte_stream){
@@ -159,13 +159,13 @@ int check_end_archive(uint8_t *bytestream){
     return 1;
 }
 
-uint8_t c_ino[8];
-uint8_t c_mode[8];
-uint8_t c_namesize[8];
-uint8_t c_devminor[8];
-uint8_t filesize[8];
-uint8_t parent_filename[16];
-uint8_t filename[16];
+#define HEADER_ATTRIBUTES_SIZE 8
+#define FILENAME_SIZE 16
+uint8_t *c_ino; 
+uint8_t *c_mode;
+uint8_t *c_namesize;
+uint8_t *c_devminor;
+uint8_t *c_filesize;
 
 int init_ramfs(char ** bytestream_end){
     uint8_t findex=0;
@@ -176,6 +176,9 @@ int init_ramfs(char ** bytestream_end){
     uint8_t *byte_stream = (uint8_t *)(RAMFS_START);
     uint8_t *file_start = byte_stream;
     while(1){
+
+        // parse header
+
         // read magic, check if matches
         if(check_magic(byte_stream) == -1){
             return -1;
@@ -183,61 +186,53 @@ int init_ramfs(char ** bytestream_end){
         byte_stream += 6;
         
         // read ino save it into current ino
-        for(int i = 0; i < 8; i++){
-            c_ino[i] = *byte_stream;
-            byte_stream++;
-        }
-     
+        c_ino = byte_stream;
+        byte_stream += 8;
+        
         // read c_mode dir hard/soft link
-        for(int i = 0; i < 8; i++){
-            c_mode[i] = *byte_stream;
-            byte_stream++;
-        }
-
+        c_mode = byte_stream;
+        byte_stream +=8;
+        
         // read c_uid don't care about user owner
         // read c_gid don;t care about group 
         // read c_nlink number of links to this file, skip
         //  c_mtime // modification time skip
         byte_stream +=32;
 
-
         // c_filesize - save this in inode, also use this to know when 
         // new file will get started
-        for(int i = 0; i < 8; i++){
-            filesize[i] = *byte_stream;
-            byte_stream++;
-        }
-
+        c_filesize = byte_stream;
+        byte_stream += 8;
+        
         // c_devmajor skip
         byte_stream += 8;
 
         // c_devminor skip 
-        for(int i = 0; i < 8; i++){
-            c_devminor[i] = byte_stream;
-            byte_stream++;
-        }
+        c_devminor = byte_stream;
+        byte_stream += 8;
+       
         // c_rdevmajor skip
         // c_rdevminor skip 
         byte_stream += 16;
 
-
         // c_namesize including trailing bytes save this
-        for(int i = 0; i < 8; i++){
-            c_namesize[i] = *byte_stream;
-            byte_stream++;
-        }
-
+        c_namesize = byte_stream;
+        byte_stream += 8;
+        
         // c_check ignore
         byte_stream+=8;
 
+        // end parse header
+
+        // extract info
         // then there is file name followed by nullbytes to so filename+header // 4
-        int64_t file_size = int_from_string(&filesize, 8);
+        int64_t file_size = int_from_string(c_filesize, 8);
 
 
         // skip / in saved name , and add appropriately as child to parent node
-        int64_t filename_size = int_from_string(&c_namesize, 8);
+        int64_t filename_size = int_from_string(c_namesize, 8);
 
-        //check once if name is "TRAILER!!!" is so it's end of archive
+        //check if name is "TRAILER!!!" is so it's end of archive
         if(check_end_archive(byte_stream)){
             *bytestream_end = byte_stream;
             return 0;
@@ -251,11 +246,11 @@ int init_ramfs(char ** bytestream_end){
         case DIRECTORY:
             current_file->type = DIRECTORY;
             current_file->children = NULL;
+            current_file->ino = NULL;
             break;
         case REGULAR:
-
-            uint64_t device_nr = *(uint64_t *)(&c_devminor);
-            uint64_t inode_nr = *(uint64_t *)(&c_ino);
+            uint64_t device_nr = *(uint64_t *)(c_devminor);
+            uint64_t inode_nr = *(uint64_t *)(c_ino);
             // regular file with size 0 search for inode
             if(file_size == 0){
                 for(int i = 0; i < ROOTFS_INODE_COUNT; i++){
@@ -267,7 +262,7 @@ int init_ramfs(char ** bytestream_end){
             }else{
                 current_ino->device_number = device_nr;
                 current_ino->inode_number = inode_nr;
-                current_ino = &inodes[++iindex];         
+                current_ino = &inodes[++iindex];
             }
             current_file->type = REGULAR;
             break;
@@ -275,39 +270,42 @@ int init_ramfs(char ** bytestream_end){
             current_file->type = INVALID;
             return -1;
         }
-        
+
         uint8_t current_name_index = 0;
-        for(int i = 0; i < filename_size; i++){
+        char parent_filename[16];
+        // parse name
+        for(int i = 0; i < FILENAME_SIZE; i++){
+            current_file->file_name[i] = '\0'; 
+            parent_filename[i] = '\0';
+        }
+        for(int i = 0; i < FILENAME_SIZE; i++){
             if(*byte_stream == '/'){
                 for(int j = 0; j < current_name_index; j++){
-                    parent_filename[j] = filename[j];
-                    filename[j] = '\0';
+                    parent_filename[j] = current_file->file_name[j];
+                    current_file->file_name[j] = '\0';
+                }
+                for(int j = current_name_index; j < FILENAME_SIZE; j++){
+                    parent_filename[j] = '\0';
+                    current_file->file_name[j] = '\0';
                 }
                 current_name_index = 0;
                 byte_stream++;
             }
             else if(*byte_stream == '\0'){
-                filename[current_name_index] = *byte_stream;
+                current_file->file_name[current_name_index] = *byte_stream;
                 break;
             }
             else {
-                filename[current_name_index] = *byte_stream;
+                current_file->file_name[current_name_index] = *byte_stream;
                 byte_stream++;
                 current_name_index++;
                 current_name_index %= ROOTFS_MAX_FILENAME_SIZE;
             }
         }
 
-
-
-        // save info about current file and continue parsing
-        for(int i = 0; i < ROOTFS_MAX_FILENAME_SIZE; i++){
-            current_file->file_name[i] = filename[i];
-        }
-        
         current_file->next_file = NULL;
         // save parent
-        if(search_file(parent_filename, current_file->parent)){
+        if(parent_filename[0] != '\0' && search_file(parent_filename, &current_file->parent)){
             // find last sibiling file and set this file as next
             struct file *sibiling = current_file->parent->children;
             if(sibiling == NULL){
@@ -325,42 +323,43 @@ int init_ramfs(char ** bytestream_end){
         // we perform this padding here
         byte_stream = ((6 + 13 * 8 + filename_size + 3 ) / 4) * 4 + file_start; 
 
+        
+        // set data         
+        if(file_size > 0 && filetype == REGULAR){
+                current_ino->data= byte_stream;
+                current_file->ino = current_ino;
+                current_ino = &inodes[iindex++];
+                current_ino->data_size = file_size;
+        }
         // then data is also padded to multiple of four
         byte_stream = byte_stream + ((file_size + 3) / 4) * 4; 
-
-        // then data which is padded to multiple of four bytes
-        //byte_stream += ((file_size + 23) / 24)  * 24;
 
 
         file_start = byte_stream;
         current_file = &files[++findex];
     }
 
-
-
-
 }
 
-int search_file(uint8_t *name, struct file *f)
+int search_file(uint8_t *name, struct file **f)
 {    
     struct file *current_file;
     for(int i = 0; i < ROOTFS_FILE_COUNT; i++){
         current_file = &files[i];
         if( strequal(current_file->file_name, name)){
-            f = current_file;
+            *f = current_file;
             return 1;
         }
     }
-    f = NULL;
+    *f = NULL;
     return 0;
 }
 
 int read(uint8_t *filename, uint32_t offset){
     struct file *current_file;
-    if (!search_file(filename, current_file) ){
+    if (!search_file(filename, &current_file) ){
         return -1;
     }
-
     uint32_t file_data_size =  current_file->ino->data_size;
     if(offset > file_data_size){
         current_file = NULL;
@@ -373,7 +372,7 @@ int read(uint8_t *filename, uint32_t offset){
 
 int ls(uint8_t *filepath){
     struct file *current_file;
-    if (!search_file(filepath, current_file) ){
+    if (!search_file(filepath, &current_file) ){
         return -1;
     }
     while(current_file != NULL){

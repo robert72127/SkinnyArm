@@ -9,16 +9,16 @@ void uart_puts(uint8_t *s);
 
 // vm.c
 struct PageFrame;
-void vmem_init(uint8_t *hole_start, uint8_t *hole_end);
-void free_page(struct  PageFrame *page);
-int alloc_page(struct PageFrame *page);
+void kalloc_init(uint8_t *hole_start, uint8_t *hole_end);
+void kfree(struct  PageFrame *page);
+int kalloc(struct PageFrame *page);
 
 // rootfs.c
 struct file;
 init_ramfs();
 int read(uint8_t *filename, uint32_t offset);
 int ls(uint8_t *filepath);
-int search_file(uint8_t *name, struct file *f);
+int search_file(uint8_t *name, struct file **f);
 
 
 // rand.c

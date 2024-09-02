@@ -29,7 +29,7 @@ void main()
         // add padding to rootfs_end
         rootfs_end = (char *) (( (uint32_t)(rootfs_end + PageSize -1) / PageSize ) * PageSize);
 
-        vmem_init(rootfs_start, rootfs_end);
+        kalloc_init(rootfs_start, rootfs_end);
         irq_vector_init();
         // enable all kinds interrupts for el0
         enable_interrupts();

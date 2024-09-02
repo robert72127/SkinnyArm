@@ -60,13 +60,13 @@ int create_process(void *code_start_addr, uint8_t pid){
 
     // allocate page for stack     
     struct PageFrame *stack_frame, *reg_state_frame;
-    if(alloc_page(stack_frame) == -1){
+    if(kalloc(stack_frame) == -1){
         proc->state = FREE;
         return -1;
     }
-    if(alloc_page(reg_state_frame) == -1){
+    if(kalloc(reg_state_frame) == -1){
         proc->state = FREE;
-        free_page(stack_frame);
+        kfree(stack_frame);
         return -1;
     }
 
@@ -111,8 +111,8 @@ int kill_process(uint8_t pid){
     // free state
     proc->pid = 0;
     free_registers(proc);
-    free_page(proc->stack_frame);
-    free_page(proc->trap_frame);
+    kfree(proc->stack_frame);
+    kfree(proc->trap_frame);
     proc->state = FREE; 
     return 0;
 }
