@@ -271,14 +271,14 @@ int init_ramfs(char ** bytestream_end){
             return -1;
         }
 
-        uint8_t current_name_index = 0;
         char parent_filename[16];
         // parse name
         for(int i = 0; i < FILENAME_SIZE; i++){
             current_file->file_name[i] = '\0'; 
             parent_filename[i] = '\0';
         }
-        for(int i = 0; i < FILENAME_SIZE; i++){
+        uint8_t current_name_index = 0;
+        while(current_name_index < FILENAME_SIZE){
             if(*byte_stream == '/'){
                 for(int j = 0; j < current_name_index; j++){
                     parent_filename[j] = current_file->file_name[j];
