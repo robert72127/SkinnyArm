@@ -7,12 +7,6 @@ extern char _vmem_start;
 const char *vmem_start =(char *)(&_vmem_start);
 const char *vmem_end = (char*)(MMIO_BASE);
 
-struct PageFrame{
-    struct  PageFrame *next; 
-    // 4096 - 8 for pointer
-    char data[PageSize - sizeof(struct  Pageframe*)];
-};
-
 struct PageFrame *page_frame_linked_list;
 
 //////////////////////////////////////////////////////////////////////////

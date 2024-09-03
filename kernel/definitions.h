@@ -1,5 +1,7 @@
 #pragma once
 
+#include "low_level.h"
+
 // uart.c
 void uart_init();
 void uart_interrupt();
@@ -7,8 +9,12 @@ void uart_send(uint8_t c);
 char uart_getc();
 void uart_puts(uint8_t *s);
 
-// vm.c
-struct PageFrame;
+// vmem.c
+struct PageFrame{
+    struct  PageFrame *next; 
+    // 4096 - 8 for pointer
+    char data[PageSize - sizeof(struct  Pageframe*)];
+};
 void kalloc_init(uint8_t *hole_start, uint8_t *hole_end);
 void kfree(struct  PageFrame *page);
 int kalloc(struct PageFrame *page);

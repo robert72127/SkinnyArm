@@ -64,9 +64,10 @@ int create_process(void *code_start_addr, uint8_t pid){
         proc->state = FREE;
         return -1;
     }
+
     if(kalloc(reg_state_frame) == -1){
-        proc->state = FREE;
         kfree(stack_frame);
+        proc->state = FREE;
         return -1;
     }
 
@@ -74,8 +75,11 @@ int create_process(void *code_start_addr, uint8_t pid){
      * @Todo 
      **/
     // setup stack_frame and reg_state_page
-    proc->state = RUNNABLE;
+    free_registers(proc);
+    proc->sp = (uint64_t)&(proc->stack_frame[PageSize-1]);
+    proc->pc = (uint64_t)&(code_start_addr);
 
+    proc->state = RUNNABLE;
 }
 
 void free_registers(struct process *proc){
