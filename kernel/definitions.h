@@ -18,6 +18,7 @@ struct PageFrame{
 void kalloc_init(uint8_t *hole_start, uint8_t *hole_end);
 void kfree(struct  PageFrame *page);
 int kalloc(struct PageFrame *page);
+void clear_page(struct PageFrame *page);
 
 // rootfs.c
 struct file;
@@ -26,6 +27,9 @@ int read(uint8_t *filename, uint32_t offset);
 int ls(uint8_t *filepath);
 int search_file(uint8_t *name, struct file **f);
 
+// process
+void create_first_process();
+void fork();
 
 // rand.c
 void rand_init();
@@ -40,8 +44,6 @@ int sd_init();
 int sd_readblock(uint32_t lba, uint8_t *buffer, uint32_t num);
 
 
-
-
-
 // string
 uint8_t strequal(uint8_t *str1, uint8_t *str2);
+void strcpy(uint8_t *src, uint8_t *dst, uint64_t size);

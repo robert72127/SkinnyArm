@@ -44,7 +44,7 @@ void kalloc_init(uint8_t *hole_start, uint8_t *hole_end){
 }
 
 // clear page
-static void clear_page(struct PageFrame *page){
+void clear_page(struct PageFrame *page){
     page->next = NULL;
     for(int i = 0; i < PageSize- sizeof(struct Pageframe*); i++){
         page->data[i] = 0;

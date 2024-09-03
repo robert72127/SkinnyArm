@@ -17,3 +17,9 @@ uint8_t strequal(uint8_t *str1, uint8_t *str2){
     }
     return 1;
 }
+
+void strcpy(uint8_t *src, uint8_t *dst, uint64_t size){
+    for(int i = 0; i < size; i++){
+        *dst = *src;
+    }
+}

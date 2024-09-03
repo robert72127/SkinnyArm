@@ -24,4 +24,3 @@ switch_to:
 get_current_process:
     mrs x0, tpidr_el1
     ret
-
