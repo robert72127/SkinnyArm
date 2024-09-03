@@ -31,6 +31,7 @@ struct process{
     struct PageFrame *stack_frame;
     // frame to store registers after context switch
     struct PageFrame *trap_frame;
+    struct process *parent;
 };
 
 #define PROCCNT 64
@@ -96,7 +97,7 @@ __attribute__((noreturn)) void create_first_process(){
 
     user_start(user_program, proc->sp);
 }
-void fork(){
+int fork(){
     // get caller process
     struct process *caller = get_current_process();
     
@@ -150,6 +151,7 @@ void fork(){
     proc->lr  = caller->lr;
 
     proc->pid = get_pid();
+    proc->parent = caller;
 
     proc->state = RUNNABLE;
 }
@@ -235,3 +237,26 @@ void scheduler(){
 ///////////////////////////////////////////////////////////////////
 ////                          Signals                           ///
 ///////////////////////////////////////////////////////////////////
+int user_fork(){
+    int ret;
+    __asm__ volatile(
+        "mov x8, 4\n"
+        "svc 0 \n"
+        : "=r"(ret)
+        : 
+        : "x0","x8"
+    );
+}
+
+/*
+int execve(const char *pathname, char *const argv[], int argc){
+    int ret;
+    __asm__ volatile(
+        "mov x8, 5"
+        "svc 0 \n"
+        : "=r"(ret)
+        : "r" (pathname), "r"(argv), "r"(argc)
+        : "x0", "x1", "x2", "x8"
+    );
+}
+*/

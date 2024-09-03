@@ -12,10 +12,10 @@ user_program:
     mov x0, 0
 dummy:
     add x0, x0, 1
-    svc 0
+    //svc 0
     cmp x0, 5
     // can't do that since we are in el0 need to call syscall
-    //bl fork
+    bl user_fork
 loop:
    add x0, x0, 1
    b loop

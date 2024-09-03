@@ -29,7 +29,8 @@ int search_file(uint8_t *name, struct file **f);
 
 // process
 void create_first_process();
-void fork();
+int fork();
+void user_form();
 
 // rand.c
 void rand_init();
