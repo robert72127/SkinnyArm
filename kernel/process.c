@@ -26,12 +26,12 @@ struct process{
     int64_t lr;
     int64_t sp;
     // used for thread management
-    uint8_t pid;
-    enum ProcesState state; // running runnable, waiting, killed
     struct PageFrame *stack_frame;
     // frame to store registers after context switch
     struct PageFrame *trap_frame;
     struct process *parent;
+    enum ProcesState state; // running runnable, waiting, killed
+    uint8_t pid;
 };
 
 #define PROCCNT 64
@@ -85,8 +85,8 @@ __attribute__((noreturn)) void create_first_process(){
 
     // allocate page for stack     
     struct PageFrame *stack_frame, *trap_frame;
-    kalloc(stack_frame);
-    kalloc(trap_frame);
+    kalloc(&stack_frame);
+    kalloc(&trap_frame);
 
     // setup stack_frame and reg_state_page
     free_registers(proc);
@@ -95,6 +95,14 @@ __attribute__((noreturn)) void create_first_process(){
     proc->state = RUNNABLE;
     proc->pid = 0;
 
+    __asm__ volatile(
+        "msr tpidr_el1, %0\n"
+        :
+        : "r"(proc)
+        :
+    );
+    
+    
     user_start(user_program, proc->sp);
 }
 int fork(){
@@ -117,16 +125,19 @@ int fork(){
 
     // allocate page for stack     
     struct PageFrame *stack_frame, *trap_frame;
-    if(kalloc(stack_frame) == -1){
+    if(kalloc(&stack_frame) == -1){
         proc->state = FREE;
         return -1;
     }
+    proc->stack_frame = stack_frame;
 
-    if(kalloc(trap_frame) == -1){
-        kfree(stack_frame);
+    if(kalloc(&trap_frame) == -1){
+        kfree(&stack_frame);
         proc->state = FREE;
+        proc->stack_frame = NULL;
         return -1;
     }
+    proc->trap_frame = trap_frame;
 
     free_registers(proc);
 
@@ -188,8 +199,8 @@ int kill_process(uint8_t pid){
     // free state
     proc->pid = 0;
     free_registers(proc);
-    kfree(proc->stack_frame);
-    kfree(proc->trap_frame);
+    kfree(&proc->stack_frame);
+    kfree(&proc->trap_frame);
     proc->state = FREE; 
     return 0;
 }
@@ -233,21 +244,23 @@ void scheduler(){
 // pass syscall number and args to kernel
 // and generates exception 
 
-
-///////////////////////////////////////////////////////////////////
-////                          Signals                           ///
-///////////////////////////////////////////////////////////////////
 int user_fork(){
     int ret;
     __asm__ volatile(
         "mov x8, 4\n"
         "svc 0 \n"
+        "ret\n"
         : "=r"(ret)
         : 
-        : "x0","x8"
+        : "x8"
     );
 }
 
+
+
+///////////////////////////////////////////////////////////////////
+////                          Signals                           ///
+///////////////////////////////////////////////////////////////////
 /*
 int execve(const char *pathname, char *const argv[], int argc){
     int ret;

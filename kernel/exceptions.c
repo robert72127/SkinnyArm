@@ -73,6 +73,18 @@ void exception_handler(unsigned long state,unsigned long type, unsigned long esr
     // no return from exception for now
 }
 
+void handle_syscall(uint64_t syscall_nr){
+    if(syscall_nr == 4){
+        fork();
+    }
+    else{
+        uart_puts("Unknown interrupt cause\n");
+    }
+    __asm__ volatile(
+        "b userret\n"
+    );
+}
+
 
 void handle_irq(){
     // check if pending interrupts is for mini uart

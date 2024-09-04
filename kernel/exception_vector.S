@@ -155,9 +155,12 @@ error_invalid_el1h:
 sync_invalid_el0_64:
 	// save user state in trap frame
 	// call syscall handler with syscall number
-	bl uservec
-	bl fork
-	b userret
+	//kernel_entry
+	b uservec
+	// uservec will breanch to handle_syscall
+	// syscall branch to userret
+	// userret returns to user
+
 
 irq_invalid_el0_64:
 	kernel_entry

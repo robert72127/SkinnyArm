@@ -16,8 +16,8 @@ struct PageFrame{
     char data[PageSize - sizeof(struct  Pageframe*)];
 };
 void kalloc_init(uint8_t *hole_start, uint8_t *hole_end);
-void kfree(struct  PageFrame *page);
-int kalloc(struct PageFrame *page);
+void kfree(struct  PageFrame **page);
+int kalloc(struct PageFrame **page);
 void clear_page(struct PageFrame *page);
 
 // rootfs.c
