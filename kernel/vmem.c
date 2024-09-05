@@ -159,3 +159,25 @@ The index to MAIR.
 Bits[1:0]
 Specify the next level is a block/page, page table, or invalid.
 */
+
+
+#define TCR_CONFIG_REGION_48bit (((64 - 48) << 0) | ((64 - 48) << 16))
+#define TCR_CONFIG_4KB ((0b00 << 14) |  (0b10 << 30))
+#define TCR_CONFIG_DEFAULT (TCR_CONFIG_REGION_48bit | TCR_CONFIG_4KB)
+
+#define MAIR_DEVICE_nGnRnE 0b00000000
+#define MAIR_NORMAL_NOCACHE 0b01000100
+#define MAIR_IDX_DEVICE_nGnRnE 0
+#define MAIR_IDX_NORMAL_NOCACHE 1
+
+void vmem_enable(){
+    __asm__ volatile(
+        "ldr x0 %0\n"
+        "msr trc_el1, x0\n"
+        :
+        :  "=r"(TCR_CONFIG_DEFAULT)
+        : "x0"
+
+    );
+
+}

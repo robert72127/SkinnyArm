@@ -74,12 +74,40 @@ void exception_handler(unsigned long state,unsigned long type, unsigned long esr
 }
 
 void handle_syscall(uint64_t syscall_nr){
-    if(syscall_nr == 4){
-        fork();
-    }
-    else{
+    switch (syscall_nr)
+    {
+    case 0:
+        sys_open();
+        break;
+    case 1:
+        sys_read();
+        break;
+    case 2:
+        sys_write();
+        break;
+    case 3:
+        sys_close();
+        break;
+    case 4:
+        sys_fork();
+        break;
+    case 5:
+        sys_execve();
+        break;
+    case 6:
+        sys_wait();
+        break;
+    case 7:
+        sys_sleep();
+        break;
+    case 8:
+        sys_exit();
+        break;
+    default:
         uart_puts("Unknown interrupt cause\n");
+        break;
     }
+    
     __asm__ volatile(
         "b userret\n"
     );

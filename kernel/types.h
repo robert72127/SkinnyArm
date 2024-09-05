@@ -9,3 +9,5 @@ typedef char int8_t;
 typedef short int16_t;
 typedef int int32_t;
 typedef long int64_t;
+
+typedef uint64_t *pagetable_t;

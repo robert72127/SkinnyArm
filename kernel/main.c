@@ -38,7 +38,9 @@ void main()
         // uncomment to enable user timer interrupt with demo user code
         // this function needs general enable_timer_interrupt to work
         user_timer_interrputs_enable();
-        //user_start();
+
+        vmem_init(); 
+       
         create_first_process();
         /*
          // say hello

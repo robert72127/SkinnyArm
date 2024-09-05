@@ -10,6 +10,7 @@ char uart_getc();
 void uart_puts(uint8_t *s);
 
 // vmem.c
+// kalloc
 struct PageFrame{
     struct  PageFrame *next; 
     // 4096 - 8 for pointer
@@ -19,6 +20,9 @@ void kalloc_init(uint8_t *hole_start, uint8_t *hole_end);
 void kfree(struct  PageFrame **page);
 int kalloc(struct PageFrame **page);
 void clear_page(struct PageFrame *page);
+// virtual memory
+void vmem_enable();
+
 
 // rootfs.c
 struct file;
@@ -29,8 +33,12 @@ int search_file(uint8_t *name, struct file **f);
 
 // process
 void create_first_process();
-int fork();
-void user_form();
+int sys_fork();
+int sys_execve();
+int sys_wait();
+int sys_sleep();
+int sys_exit();
+
 
 // rand.c
 void rand_init();

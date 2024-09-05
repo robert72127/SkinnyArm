@@ -30,6 +30,7 @@ struct process{
     // frame to store registers after context switch
     struct PageFrame *trap_frame;
     struct process *parent;
+    pagetable_t pagetable;
     enum ProcesState state; // running runnable, waiting, killed
     uint8_t pid;
 };
@@ -58,7 +59,7 @@ void free_registers(struct process *proc){
 }
 
 
-uint8_t get_pid(){
+uint8_t getpid(){
     uint8_t pid = 1;
     while(1){
         for(int i =0; i < PROCCNT; i++){
@@ -105,7 +106,70 @@ __attribute__((noreturn)) void create_first_process(){
     
     user_start(user_program, proc->sp);
 }
-int fork(){
+
+
+int kill_process(uint8_t pid){
+    // mark process as dead
+    struct process *proc;
+    for(int i = 0; i < PROCCNT; i++){
+        proc = &process_array[i];
+        if (proc->pid == pid){
+            proc->state = KILLED;
+            break;
+        }
+        if(i = PROCCNT - 1){
+            return -1;
+        }
+    }
+    // free state
+    proc->pid = 0;
+    free_registers(proc);
+    kfree(&proc->stack_frame);
+    kfree(&proc->trap_frame);
+    proc->state = FREE; 
+    return 0;
+}
+// Timer interrupt jumps here 
+
+void scheduler(){
+    // read current process from system register
+    struct process *curr_proc = get_current_process();
+    curr_proc->state = RUNNABLE;
+    // next process in scheduler array
+    struct process *next_proc = curr_proc + 1; 
+    for(;;) {
+        for(;next_proc < &process_array[PROCCNT]; next_proc++ ){
+            if  (next_proc->state == RUNNABLE){
+                
+                //save current process state and load next process
+                switch_to(curr_proc, next_proc);
+                curr_proc = next_proc;
+                // return to interrupt 
+                return;
+            }
+        }
+        next_proc = &process_array[0];
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+////                        Syscalls                            ///
+///////////////////////////////////////////////////////////////////
+//
+// User call appropriate api, function with argument
+// then our function call svc instruction
+// this generates synchronous exception
+// this exception is handled by el1(kernel)
+// os then validates all args passed
+// performs action and return, which ensure that execution
+// will resume at ELO
+// right after svc
+//
+// so user is provided with wrappers that 
+// pass syscall number and args to kernel
+// and generates exception 
+
+int sys_fork(){
     // get caller process
     struct process *caller = get_current_process();
     
@@ -169,7 +233,7 @@ int fork(){
 
 // later switch to searching from initramfs and elf parsing
 // for now just provide a function we want to jump to
-void execve( void(*fun)()  ){
+void sys_execve( void(*fun)()  ){
     // get caller process
     struct process *proc = get_current_process();
     clear_page(proc->stack_frame);
@@ -182,81 +246,6 @@ void execve( void(*fun)()  ){
         : "r"(fun)
     );
 }
-
-int kill_process(uint8_t pid){
-    // mark process as dead
-    struct process *proc;
-    for(int i = 0; i < PROCCNT; i++){
-        proc = &process_array[i];
-        if (proc->pid == pid){
-            proc->state = KILLED;
-            break;
-        }
-        if(i = PROCCNT - 1){
-            return -1;
-        }
-    }
-    // free state
-    proc->pid = 0;
-    free_registers(proc);
-    kfree(&proc->stack_frame);
-    kfree(&proc->trap_frame);
-    proc->state = FREE; 
-    return 0;
-}
-// Timer interrupt jumps here 
-
-void scheduler(){
-    // read current process from system register
-    struct process *curr_proc = get_current_process();
-    curr_proc->state = RUNNABLE;
-    // next process in scheduler array
-    struct process *next_proc = curr_proc + 1; 
-    for(;;) {
-        for(;next_proc < &process_array[PROCCNT]; next_proc++ ){
-            if  (next_proc->state == RUNNABLE){
-                
-                //save current process state and load next process
-                switch_to(curr_proc, next_proc);
-                curr_proc = next_proc;
-                // return to interrupt 
-                return;
-            }
-        }
-        next_proc = &process_array[0];
-    }
-}
-
-///////////////////////////////////////////////////////////////////
-////                        Syscalls                            ///
-///////////////////////////////////////////////////////////////////
-//
-// User call appropriate api, function with argument
-// then our function call svc instruction
-// this generates synchronous exception
-// this exception is handled by el1(kernel)
-// os then validates all args passed
-// performs action and return, which ensure that execution
-// will resume at ELO
-// right after svc
-//
-// so user is provided with wrappers that 
-// pass syscall number and args to kernel
-// and generates exception 
-
-int user_fork(){
-    int ret;
-    __asm__ volatile(
-        "mov x8, 4\n"
-        "svc 0 \n"
-        "ret\n"
-        : "=r"(ret)
-        : 
-        : "x8"
-    );
-}
-
-
 
 ///////////////////////////////////////////////////////////////////
 ////                          Signals                           ///
