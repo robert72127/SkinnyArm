@@ -27,7 +27,10 @@ void main()
         // add padding to rootfs_end
         rootfs_end = (char *) (( (uint32_t)(rootfs_end + PageSize -1) / PageSize ) * PageSize);
 
-        kalloc_init(rootfs_start, rootfs_end);
+        kalloc_init();
+        // reserve region for rootfs
+        kalloc_kern_reserve(rootfs_start, rootfs_end);
+
         irq_vector_init();
         // enable all kinds interrupts for el0
         enable_interrupts();
@@ -39,7 +42,7 @@ void main()
         // this function needs general enable_timer_interrupt to work
         user_timer_interrputs_enable();
 
-        vmem_init(); 
+        //vmem_init(); 
        
         create_first_process();
         /*

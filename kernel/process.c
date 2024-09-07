@@ -225,7 +225,7 @@ int sys_fork(){
     proc->fp  = caller->fp;
     proc->lr  = caller->lr;
 
-    proc->pid = get_pid();
+    proc->pid = getpid();
     proc->parent = caller;
 
     proc->state = RUNNABLE;
@@ -233,7 +233,9 @@ int sys_fork(){
 
 // later switch to searching from initramfs and elf parsing
 // for now just provide a function we want to jump to
-void sys_execve( void(*fun)()  ){
+int sys_execve(   ){
+    /*
+    void(*fun)() = 
     // get caller process
     struct process *proc = get_current_process();
     clear_page(proc->stack_frame);
@@ -245,6 +247,7 @@ void sys_execve( void(*fun)()  ){
         :
         : "r"(fun)
     );
+    */
 }
 
 ///////////////////////////////////////////////////////////////////

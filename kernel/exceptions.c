@@ -74,6 +74,7 @@ void exception_handler(unsigned long state,unsigned long type, unsigned long esr
 }
 
 void handle_syscall(uint64_t syscall_nr){
+    /*
     switch (syscall_nr)
     {
     case 0:
@@ -107,7 +108,7 @@ void handle_syscall(uint64_t syscall_nr){
         uart_puts("Unknown interrupt cause\n");
         break;
     }
-    
+    */
     __asm__ volatile(
         "b userret\n"
     );

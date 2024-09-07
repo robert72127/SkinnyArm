@@ -18,7 +18,7 @@ struct PageFrame *page_frame_linked_list;
 
 // init vm skip rootfs space assume hole start and end 
 // are aligned to page size, if not overwrite them
-void kalloc_init(uint8_t *hole_start, uint8_t *hole_end){
+void kalloc_init(){
     uint64_t num_pages = 0;
 
     char *current_address = vmem_start;
@@ -34,13 +34,6 @@ void kalloc_init(uint8_t *hole_start, uint8_t *hole_end){
     previous_frame = page_frame_linked_list;
 
     while(current_address <= vmem_end){
-
-        if(current_address == hole_start){
-            while(current_address < hole_end){
-                current_address += PageSize;
-            }
-        }
-        
         current_frame = (struct PageFrame *)(current_address);
         if(previous_frame != NULL) {
             previous_frame->next = current_frame;
@@ -52,6 +45,34 @@ void kalloc_init(uint8_t *hole_start, uint8_t *hole_end){
     current_frame->next = NULL;
 }
 
+/** 
+*   @brief reserves special regions for kernel,
+*   used only during initialization, right after kalloc_init
+*   so no need to check whether page is used
+*/
+int kalloc_kern_reselve(uint64_t start_addr, uint64_t end_addr){
+    // rount start down and end up to multiple of page size's
+    start_addr = (start_addr / PageSize ) * PageSize;
+    end_addr = ((start_addr + PageSize - 1) / PageSize) * PageSize;
+
+    struct PageFrame *ll_page, *prev_page, *current_page = page_frame_linked_list;
+    uint64_t addr = 0;
+    while(addr < start_addr){
+        current_page = current_page->next;
+        addr += PageSize;
+    }
+    ll_page = current_page;
+    prev_page = current_page;
+    while(addr < end_addr){
+        prev_page->next = current_page->next;
+        clear_page(current_page);
+        current_page = prev_page->next;
+        addr += PageSize;
+    }
+}
+
+
+
 // clear page
 void clear_page(struct PageFrame *page){
     page->next = NULL;
@@ -62,7 +83,7 @@ void clear_page(struct PageFrame *page){
 
 // add page in front of ll
 void kfree(struct PageFrame **page){
-    clear_page(page);
+    clear_page(*page);
     struct PageFrame *previous_head = page_frame_linked_list;
     (*page)->next = page_frame_linked_list;
     page_frame_linked_list = *page;
@@ -169,15 +190,16 @@ Specify the next level is a block/page, page table, or invalid.
 #define MAIR_NORMAL_NOCACHE 0b01000100
 #define MAIR_IDX_DEVICE_nGnRnE 0
 #define MAIR_IDX_NORMAL_NOCACHE 1
-
+/*
 void vmem_enable(){
     __asm__ volatile(
-        "ldr x0 %0\n"
-        "msr trc_el1, x0\n"
+        "ldr x0, %0\n"
+        "msr tcr_el1, x0\n"
         :
-        :  "=r"(TCR_CONFIG_DEFAULT)
+        :  "r"(TCR_CONFIG_DEFAULT)
         : "x0"
 
     );
 
 }
+*/
