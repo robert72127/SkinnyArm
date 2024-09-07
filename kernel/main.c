@@ -27,9 +27,11 @@ void main()
         // add padding to rootfs_end
         rootfs_end = (char *) (( (uint32_t)(rootfs_end + PageSize -1) / PageSize ) * PageSize);
 
+        // vmem starts after rootfs_end so we are good
         kalloc_init();
-        // reserve region for rootfs
-        kalloc_kern_reserve(rootfs_start, rootfs_end);
+        
+        // allocate space for page translation, 
+
 
         irq_vector_init();
         // enable all kinds interrupts for el0

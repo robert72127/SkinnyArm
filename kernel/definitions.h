@@ -17,13 +17,12 @@ struct PageFrame{
     char data[PageSize - sizeof(struct  Pageframe*)];
 };
 void kalloc_init();
-int kalloc_kern_reserve(uint64_t start_addr, uint64_t end_addr);
+void kalloc_kern_reserve(uint64_t start_addr, uint64_t end_addr);
 void kfree(struct  PageFrame **page);
 int kalloc(struct PageFrame **page);
 void clear_page(struct PageFrame *page);
 // virtual memory
 void vmem_enable();
-
 
 // rootfs.c
 struct file;
@@ -39,20 +38,6 @@ int sys_execve();
 int sys_wait();
 int sys_sleep();
 int sys_exit();
-
-
-// rand.c
-void rand_init();
-uint64_t rand(uint64_t min, uint64_t max);
-
-// sd_card.c
-#define SD_OK 0
-#define SD_TIMEOUT -1
-#define SD_ERROR -2
-
-int sd_init();
-int sd_readblock(uint32_t lba, uint8_t *buffer, uint32_t num);
-
 
 // string
 uint8_t strequal(uint8_t *str1, uint8_t *str2);
