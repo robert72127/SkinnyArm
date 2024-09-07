@@ -1,3 +1,5 @@
+#include "memory_map.h"
+
 .section ".text.boot"
 
 .global _start
@@ -45,9 +47,21 @@ set_el1:
     // change execution level to EL1, return to set_stack
     mov     x2, #0x3c5
     msr     spsr_el2, x2
-    adr     x2, set_stack
+    adr     x2, enable_vmem
     msr     elr_el2, x2
     eret
+
+enable_vmem:
+    // write configurations for vmem
+    ldr x0, = TCR_CONFIG_DEFAULT
+    msr tcr_el1, x0
+    // write memory access policies configurations to mair_el1
+    ldr x0, =( \
+        (MAIR_DEVICE_nGnRnE << (MAIR_IDX_DEVICE_nGnRnE * 8)) | \
+        (MAIR_NORMAL_NOCACHE << (MAIR_IDX_NORMAL_NOCACHE * 8)) \
+        )
+    msr mair_el1, x0
+
 
 // our stack grown downward
 // therefore for each core we should set initial address to:

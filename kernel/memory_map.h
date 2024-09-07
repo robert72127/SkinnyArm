@@ -12,15 +12,40 @@
 // rpi3b has 4 cpu's
 #define NCPU 4
 
+
+// virtual memory set up
+//use 48 bits address space
+#define TCR_CONFIG_REGION_48bit (((64 - 48) << 0) | ((64 - 48) << 16))
+// use 4 kB page sizes
+#define TCR_CONFIG_4KB ((0b00 << 14) |  (0b10 << 30))
+// configure into single macro
+#define TCR_CONFIG_DEFAULT (TCR_CONFIG_REGION_48bit | TCR_CONFIG_4KB)
+
+// attributes for device memory
+#define MAIR_DEVICE_nGnRnE 0b00000000
+// atributes for normal memory, no cahced 
+#define MAIR_NORMAL_NOCACHE 0b01000100
+// index 0 for device mem in MAIR_EL1 register
+#define MAIR_IDX_DEVICE_nGnRnE 0
+// index 1 for normaly mem with no cache in MAIR_EL1 register
+#define MAIR_IDX_NORMAL_NOCACHE 1
+
+// temporarly for kernel identiry mapping
+#define PD_TABLE 0b11
+#define PD_BLOCK 0b01
+#define PD_ACCESS (1 << 10)
+#define BOOT_PGD_ATTR PD_TABLE
+#define BOOT_PUD_ATTR (PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK)
+
+
+#define KERN_START 0 //0xffff000000000000
+
 // memory map
 // see BCM2837-ARM-Peripherals.pdf
-// thank's to https://github.com/bztsrc/raspi3-tutorial
-
-
-#define RAMFS_START     0x8000000
+#define RAMFS_START  (KERN_START + 0x8000000)
 
 // page 6 of PDF
-#define MMIO_BASE       0x3F000000
+#define MMIO_BASE       (KERN_START +  0x3F000000)
 #define MMIO_END        0x3FFFFFFF
 //Thus a peripheral advertised here at bus address 0x7Ennnnnn is available at physical address 0x3Fnnnnnn.
 
@@ -113,4 +138,3 @@
 #define EMMC_INT_EN         ((volatile unsigned int*)(MMIO_BASE+0x00300038))
 #define EMMC_CONTROL2       ((volatile unsigned int*)(MMIO_BASE+0x0030003C))
 #define EMMC_SLOTISR_VER    ((volatile unsigned int*)(MMIO_BASE+0x003000FC))
-
