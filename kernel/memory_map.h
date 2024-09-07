@@ -46,7 +46,7 @@
 
 // page 6 of PDF
 #define MMIO_BASE       (KERN_START +  0x3F000000)
-#define MMIO_END        0x3FFFFFFF
+#define MMIO_END        (KERN_START +  0x3FFFFFFF)
 //Thus a peripheral advertised here at bus address 0x7Ennnnnn is available at physical address 0x3Fnnnnnn.
 
 /* Auxilary mini UART registers */

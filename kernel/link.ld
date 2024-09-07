@@ -1,11 +1,17 @@
 SECTIONS
 {
-    . = 0x80000; /* kernel load address */ 
-
-    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
-    .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
+    . = 0x80000;
+    _start = .;
+    .text : {
+         KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) 
+    } 
+    .rodata : {
+         *(.rodata .rodata.* .gnu.linkonce.r*) 
+    }
     PROVIDE(_data = .);
-    .data : { *(.data .data.* .gnu.linkonce.d*) }
+    .data : {
+         *(.data .data.* .gnu.linkonce.d*) 
+    }
     .bss (NOLOAD) : {
         . = ALIGN(16);
         __bss_start = .;
