@@ -135,7 +135,7 @@ void free_page(pagetable_t pagetable, int64_t va){
  */
 int unmap_region(pagetable_t pagetable, uint64_t va_start, uint64_t va_end){
     while(va_start < va_end){
-        free_range(pagetable, va_start);
+        free_page(pagetable, va_start);
         va_start += PageSize;
     }
 }

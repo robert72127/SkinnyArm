@@ -9,8 +9,7 @@ void uart_send(uint8_t c);
 char uart_getc();
 void uart_puts(uint8_t *s);
 
-// vmem.c
-// kalloc
+// kalloc.c
 struct PageFrame{
     struct  PageFrame *next; 
     // 4096 - 8 for pointer
@@ -23,6 +22,19 @@ int kalloc(struct PageFrame **page);
 void clear_page(struct PageFrame *page);
 // virtual memory
 void vmem_enable();
+
+// vmem.c
+struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va);
+int map_page(pagetable_t pagetable, uint64_t va, uint8_t *data);
+int map_region(pagetable_t pagetable, uint64_t va_start, uint64_t va_end, char* data);
+void free_page(pagetable_t pagetable, int64_t va);
+int unmap_region(pagetable_t pagetable, uint64_t va_start, uint64_t va_end);
+void free_pagetable(pagetable_t pagetable);
+pagetable_t make_kpagetable();
+int clone_pagetable(pagetable_t from, pagetable_t to);
+void copy_from_user(pagetable_t user_pgtb, uint8_t* from, uint8_t* to, uint64_t size);
+void copy_to_user(pagetable_t user_pgtb, char* from, char *to, uint64_t size);
+
 
 // rootfs.c
 struct file;
