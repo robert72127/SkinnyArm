@@ -52,15 +52,15 @@
 #define SET_KUACCESS(addr) SET_BIT(addr, 6, 1)
 #define GET_KUACCESS(addr) SET_BIT(addr, 6, 0)
 //bit 4-2, index to MAIR
-#define SET_MAIR(addr, index) SET_BIT(addr, 4, ( (index) >> 4)); SET_BIT(addr, 3, ( (index) >> 3)); SET_BIT(addr, 2, ( (index) >> 2)) 
+#define SET_MAIR(addr, index)  SET_BIT(SET_BIT(SET_BIT(addr, 4, ( (index) >> 4)),  3, ( (index) >> 3)) , 2, ( (index) >> 2)) 
 #define GET_MAIR(addr, index) ((GET_BIT(addr, 4) << 2) | ( GET_BIT(addr, 3),  1) |  GET_BIT(addr, 2)) 
 // bits 1-0, specify next level
 // 11 - page table
 // 01 - page
 // *0 - invalid
-#define SET_NEXT_LEVEL_PTABLE(addr) SET_BIT(addr, 1, 1 ); SET_BIT(addr, 0, 1) 
-#define SET_NEXT_LEVEL_PAGE(addr)  SET_BIT(addr, 1, 0 ); SET_BIT(addr, 0, 1) 
-#define SET_NEXT_LEVEL_INVALID(addr)  SET_BIT(addr, 1, 0 ); SET_BIT(addr, 0, 0) 
+#define SET_NEXT_LEVEL_PTABLE(addr) SET_BIT(SET_BIT(addr, 1, 1 ), 0, 1) 
+#define SET_NEXT_LEVEL_PAGE(addr)  SET_BIT(SET_BIT(addr, 1, 0 ) , 0, 1) 
+#define SET_NEXT_LEVEL_INVALID(addr)  SET_BIT(SET_BIT(addr, 1, 0 ), 0, 0) 
 #define GET_NEXT_LEVEL(addr) (GET_BIT(addr, 1) << 1) | GET_BIT(addr, 0)
 /**
  * search for physical address corresponding to virtual one
