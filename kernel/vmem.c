@@ -3,14 +3,6 @@
 #include "definitions.h"
 #include "low_level.h"
 
-// there are 3 indirect leveles we need to go before our final addr
-#define IND_LVL 3
-
-// each page is 4 kB, each entry is 64 bits so there will be 512 of them
-
-//get bits from 47 to 12 corresponding to physical addr of pagetable entry
-#define ENTRY_PADDR(x) (( x & 0x0FFF) >> 11)
-
 //////////////////////////////////////////////////////////////////////////
 //
 //                  Starting virtual memory
@@ -21,12 +13,20 @@
 //+------------------------------------------------------------------------------------------------+
 //|                          |   level 0      |  level1        | level 2        |                  |
 //+------------------------------------------------------------------------------------------------+
+/**
+ * Handle extraction from virtual address
+ */
+
+// there are 3 indirect leveles we need to go before our final addr
+#define IND_LVL 3
 // bits63..0
 // get offset from va into given level pte
 #define LVL_ADDR(addr, level) (( (addr) >> (30 - (level*9) )) & 0x1FF)
 // get page offset from va
 #define OFFSET(addr) ((addr) & 0x1FF)
-
+/**
+ * Construct page_table_Entry
+ */
 // set bit in a range 63..0 to val 1/0
 #define SET_BIT(addr, bit, val)  ( ( (addr) & (~ ( 1 << (bit) ) ) )  | (1<< (bit) ) )
 #define GET_BIT(addr, bit)  (( (addr) & (1 << (bit)) ) >> (bit) )
@@ -38,21 +38,24 @@
 #define SET_U_NON_EXEC(addr) SET_BIT(addr, 53,1)
 #define SET_U_EXEC(addr)  SET_BIT(addr, 53, 0)
 #define GET_U_EXEC(addr) GET_BIT(addr, 53)
+// set physical page address in page table entry
+#define SET_PHYSICAL_ADDR(addr, phys_addr) ( ( (addr) & (~ 0x0000FFFFFFFFF000) ) |   ( ( (phys_addr) << 12  )  & 0x0000FFFFFFFFF000))
+#define GET_PHYSICAL_ADDR(addr) ((addr &  0x0000FFFFFFFFF000 ) >> 12)  
 //bit 10, if not set page fault is generated when accessing
 #define SET_PAGE_SET(addr)  SET_BIT(addr, 10, 1) 
 #define SET_PAGE_NOT_SET(addr)  SET_BIT(addr, 10, 0) 
-#define GET_PAGE_SET(addr)  SET_BIT(addr, 10) 
+#define GET_PAGE_SET(addr)  GET_BIT(addr, 10) 
 // bit 7, 0 is read-write, 1 is for read only
 #define SET_U_RONLY(addr) SET_BIT(addr, 7, 1)
 // warning u_rw means kernl is non executable in this region 
 #define SET_U_RW(addr) SET_BIT(addr, 7, 0)
-#define GET_RW(addr) SET_BIT(addr, 7)
+#define GET_RW(addr) GET_BIT(addr, 7)
 // bit 6, 0 for kernel only 1 for user/kernel access 
 #define SET_KACCES(addr) SET_BIT(addr, 6, 0)
 #define SET_KUACCESS(addr) SET_BIT(addr, 6, 1)
-#define GET_KUACCESS(addr) SET_BIT(addr, 6, 0)
+#define GET_KUACCESS(addr) GET_BIT(addr, 6, 0)
 //bit 4-2, index to MAIR
-#define SET_MAIR(addr, index)  SET_BIT(SET_BIT(SET_BIT(addr, 4, ( (index) >> 4)),  3, ( (index) >> 3)) , 2, ( (index) >> 2)) 
+#define SET_MAIR(addr, index)  (SET_BIT(SET_BIT(SET_BIT(addr, 4, ( (index) >> 4)),  3, ( (index) >> 3)) , 2, ( (index) >> 2)) ) 
 #define GET_MAIR(addr, index) ((GET_BIT(addr, 4) << 2) | ( GET_BIT(addr, 3),  1) |  GET_BIT(addr, 2)) 
 // bits 1-0, specify next level
 // 11 - page table
@@ -62,10 +65,22 @@
 #define SET_NEXT_LEVEL_PAGE(addr)  SET_BIT(SET_BIT(addr, 1, 0 ) , 0, 1) 
 #define SET_NEXT_LEVEL_INVALID(addr)  SET_BIT(SET_BIT(addr, 1, 0 ), 0, 0) 
 #define GET_NEXT_LEVEL(addr) (GET_BIT(addr, 1) << 1) | GET_BIT(addr, 0)
-/**
- * search for physical address corresponding to virtual one
- * if there isn't one create it
- */
+
+// points to next level table
+#define PGDPUD_ENTRY(addr, phys_addr) (SET_K_NON_EXEC(addr) | SET_PAGE_SET(addr) |  SET_U_NON_EXEC(addr) | SET_NEXT_LEVEL_PAGE(addr) | SET_PHYSICAL_ADDR(addr, phys_addr) )
+// points to page_table_entry (ie actuall page that holds user/kernel data)
+#define PMD_ENTRY(addr, phys_addr) (SET_K_NON_EXEC(addr) | SET_PAGE_SET(addr) |  SET_U_NON_EXEC(addr) | SET_NEXT_LEVEL_PAGE(addr) | SET_PHYSICAL_ADDR(addr, phys_addr) )
+// points to kernel page
+#define KERNEL_ENTRY(addr, phys_addr) (SET_K_EXEC(addr) | SET_U_NON_EXEC(addr) | SET_PAGE_SET(addr) | SET_KACCES(addr) | SET_MAIR(addr, 0) | SET_NEXT_LEVEL_INVALID(addr) | SET_PHYSICAL_ADDR(addr, phys_addr) )
+// kernel device pages
+#define DEVICE_ENTRY(addr, phys_addr) (SET_K_EXEC(addr) | SET_U_NON_EXEC(addr) | SET_PAGE_SET(addr) | SET_KACCES(addr) | SET_MAIR(addr, 1) | SET_NEXT_LEVEL_INVALID(addr) | SET_PHYSICAL_ADDR(addr, phys_addr) )
+// points to user page
+#define USER_ENTRY(addr, phys_addr) (SET_K_EXEC(addr) | SET_U_EXEC(addr) | SET_PAGE_SET(addr) | SET_U_RW(addr) | SET_KACCES(addr) | SET_MAIR(addr, 0) | SET_NEXT_LEVEL_INVALID(addr) | SET_PHYSICAL_ADDR(addr, phys_addr) )
+// invalid entry
+#define INVALID_ENTRY(addr) (SET_PAGE_NOT_SET(addr))
+
+// each page is 4 kB, each entry is 64 bits so there will be 512 of them
+#define PENTRY_CNT 512
 
 /**
  * @todo we also need to set priviledges etc for pages
@@ -73,34 +88,71 @@
  */
 
 
-struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va){
+/**
+ * @brief search for physical page corresponding to virtual address
+ * if there isn't one create it
+ * kind can be one of 0: KERNEL, 1: Device, 2 User
+ */
+struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va, uint8_t kind){
     // we need to decide at each level which bucket it belongs to
     struct PageFrame* frame;
     pagetable_t parent_table;
+    uint64_t pentry;
     for(int i = 0; i <= 2; i++){
+        pentry = 0;
         parent_table = pagetable;
-        pagetable = &pagetable[LVL_ADDR(va ,i)];
         // if this indirect page doesn't exists yet create it
-        if(pagetable == NULL ){
+        if( GET_PAGE_SET(pagetable[(va)]) == 0 ){
             if(kalloc(&frame) == 0){
-                parent_table[LVL_ADDR(va,i)] = (uint64_t)frame;
+                switch (i)
+                {
+                case 0:
+                    pentry = PGDPUD_ENTRY(pentry, (uint64_t)frame);
+                    break;
+                case 1:
+                    pentry = PMD_ENTRY(pentry, (uint64_t)frame);
+                case 2:
+                    switch (kind)
+                    {
+                        case 0:
+                            pentry = KERNEL_ENTRY(pentry, (uint64_t)frame);
+                            break;
+                        case 1:
+                            pentry = DEVICE_ENTRY(pentry, (uint64_t)frame);
+                            break;
+                        case 2:
+                            pentry = USER_ENTRY(pentry, (uint64_t)frame);
+                            break;
+                        default:
+                            kfree(&frame);
+                            return NULL;
+                    }
+                    break;
+                default:
+                    kfree(&frame);
+                    return NULL;
+                }
+                
+                parent_table[LVL_ADDR(va,i)] = pentry;
                 pagetable = (pagetable_t)(frame);
             }
             else{
                 return NULL;
             }
         }
-        else{
-            frame = (struct PageFrame *)(pagetable);
-        }
-
+        pagetable = &pagetable[LVL_ADDR(va ,i)];
+        frame = (struct PageFrame *)(pagetable);
     }
     return frame; 
 }
 
-// map single page of data
-int map_page(pagetable_t pagetable, uint64_t va, uint8_t *data){
-    struct PageFrame *frame = get_physical_page(pagetable,va);
+/**
+ * @brief
+ * map single page of data
+ * kind can be one of 0: KERNEL, 1: Device, 2 User
+ */
+int map_page(pagetable_t pagetable, uint64_t va, uint8_t *data, uint8_t kind){
+    struct PageFrame *frame = get_physical_page(pagetable,va,kind);
     if (frame == NULL){
         return -1;
     }
@@ -110,16 +162,18 @@ int map_page(pagetable_t pagetable, uint64_t va, uint8_t *data){
 
 
 /**
+ * @brief
  * Populate enough of page table to accomodate range from va_start to va_end
+ * kind can be one of 0: KERNEL, 1: Device, 2 User
  */
-int map_region(pagetable_t pagetable, uint64_t va_start, uint64_t va_end, char* data){
+int map_region(pagetable_t pagetable, uint64_t va_start, uint64_t va_end, char* data, uint8_t kind){
     // expect va_start and va_end to be multiple of pagesize
     if (va_start % PageSize != 0 || va_end % PageSize != 0){
         return -1;
     }
     uint64_t va_curr = va_start;
     while(va_curr < va_end){
-        if(map_page(pagetable, va_start, data) == -1){
+        if(map_page(pagetable, va_start, data, kind) == -1){
             unmap_region(pagetable, va_start, va_curr);
             return -1;
         }
@@ -129,47 +183,51 @@ int map_region(pagetable_t pagetable, uint64_t va_start, uint64_t va_end, char* 
 }
 
 /**
- * free physical frame
+ * @brief
+ * free physical frame corresponding to vmaddr pages
  * after that check if we can free indirect pages
  * if so do that too
  */
 void free_page(pagetable_t pagetable, int64_t va){
-
     pagetable_t parent_table, gparent_table, current_table = pagetable;
+    uint64_t pentry;
     for(int i = 0; i <= 2; i++){
         gparent_table = parent_table;
         parent_table = current_table;
-        current_table = &current_table[LVL_ADDR(va ,i)];
-        // if this indirect page doesn't exists yet create it
-        if(current_table == NULL ){
+        pentry = current_table[LVL_ADDR(va ,i)];
+        if (GET_PAGE_SET(pentry) == 0){
             return;
         }
+        current_table = GET_PHYSICAL_ADDR(pentry);
+
     }
     struct PageFrame *frame = (struct PageFrame *)current_table;
     kfree(&frame);
-    parent_table[LVL_ADDR(va,2)] = 0;
+    pentry = SET_PAGE_NOT_SET(0);
+    parent_table[LVL_ADDR(va,2)] = pentry;
 
     // check if parent contains other entries, if not free it too
-    for(int i = 0; i < PageSize / sizeof(uint64_t); i++ ){
-        if( parent_table[i] != 0){
+    for(int i = 0; i < PENTRY_CNT; i++ ){
+        if( GET_PAGE_SET(parent_table[i]) != 0){
             return;
         }
     } 
     frame = (struct PageFrame *)parent_table;
     kfree(&frame);
-    gparent_table[LVL_ADDR(va, 1)] = 0;
+    gparent_table[LVL_ADDR(va, 1)] = INVALID_ENTRY(0) ;
 
-    for(int i = 0; i < PageSize / sizeof(uint64_t); i++ ){
-        if(gparent_table[i] != 0){
+    for(int i = 0; i < PENTRY_CNT; i++ ){
+        if( GET_PAGE_SET(parent_table[i]) != 0){
             return;
         }
     }
     frame = (struct PageFrame *)gparent_table;
     kfree(&frame);
-    pagetable[LVL_ADDR(va, 0)] = 0; 
+    pagetable[LVL_ADDR(va, 0)] = INVALID_ENTRY(0); 
 }
 
 /**
+ * @brief
  * walk page table and free defined region
  */
 int unmap_region(pagetable_t pagetable, uint64_t va_start, uint64_t va_end){
@@ -180,20 +238,25 @@ int unmap_region(pagetable_t pagetable, uint64_t va_start, uint64_t va_end){
 }
 
 /**
+ * @brief
  * free's whole page table with all subtables
  */
 void free_pagetable(pagetable_t pagetable){
     pagetable_t lpage,ppage,gpage;
+    uint64_t pentry;
     struct PageFrame *frame;
-    for(int i = 0; i < PageSize/ sizeof(uint64_t); i++){
-        gpage = pagetable[i];
-        if(gpage){
-            for(int j = 0; j < PageSize/ sizeof(uint64_t); j++){
-                ppage = gpage[j];
-                if(ppage){
-                    for(int k = 0; k < PageSize/ sizeof(uint64_t); k++){
-                        lpage = ppage[k];
-                        if(lpage){
+    for(int i = 0; i < PENTRY_CNT; i++){
+        if (GET_PAGE_SET(pagetable[i]) != 0){
+            pentry = GET_PHYSICAL_ADDR(pagetable[i]);
+            gpage = pentry;
+            for(int j = 0; j < PENTRY_CNT; j++){
+                if (GET_PAGE_SET(gpage[j]) != 0){
+                    pentry = GET_PHYSICAL_ADDR(gpage[j]);
+                    gpage = pentry;
+                    for(int k = 0; k < PENTRY_CNT; k++){
+                        if (GET_PAGE_SET(ppage[k]) != 0){
+                            pentry = GET_PHYSICAL_ADDR(ppage[k]);
+                            lpage = pentry;
                             frame = (struct PageFrame *)lpage;
                             kfree(&frame);
                         }
@@ -212,7 +275,9 @@ void free_pagetable(pagetable_t pagetable){
 
 extern char _end;
 extern char _start;
-// create page table for kernel
+/**
+ * @brief create page table for kernel
+ */
 pagetable_t make_kpagetable(){
     struct Pagetable *pud;
     pagetable_t kpagetable = kalloc(&pud);
@@ -227,12 +292,11 @@ pagetable_t make_kpagetable(){
 
     // whole kernel address space is 1 GB
     // and also map peripherials
-    if (map_region(kpagetable, va_start, va_end, kernel_memory) == -1 ){
+    if (map_region(kpagetable, va_start, va_end, kernel_memory, 0) == -1 ){
         return NULL;
     } 
-
     //map peripherials
-    if(map_region(kpagetable, MMIO_BASE, MMIO_END+1, mmio_memory) == -1){
+    if(map_region(kpagetable, MMIO_BASE, MMIO_END+1, mmio_memory, 1) == -1){
         return NULL;
     }
     return kpagetable;
@@ -240,53 +304,54 @@ pagetable_t make_kpagetable(){
 
 
 /**
- * clone pagetable for fork
+ * @brief clone pagetable for fork
+ *  at each level we should copy page 
+ * then walk the copy and change phyisical addresses
  */
-int clone_pagetable(pagetable_t from, pagetable_t to){
-    pagetable_t from_lpage, from_ppage,from_gpage;
-    pagetable_t to_lpage, to_ppage,to_gpage;
 
-    struct PageFrame *from_frame, *to_frame;
-    for(int i = 0; i < PageSize/ sizeof(uint64_t); i++){
-        from_gpage = from[i];
-        if(from_gpage){
-            for(int j = 0; j < PageSize/ sizeof(uint64_t); j++){
-                from_ppage = from_gpage[j];
-                if (from_ppage){
-                    for(int k = 0; k < PageSize/ sizeof(uint64_t); k++){ 
-                        from_lpage = from_ppage[k];
-                        if (from_lpage){
-                            from_frame = (struct PageFrame *)from_lpage;
-                            if(kalloc(&to_frame) == -1){
-                            }
-                            strcpy((uint8_t *)from_frame, (uint8_t *)to_frame, PageSize);
-                            to_lpage[k] = to_frame; 
-                        }
-                    }
-                    from_frame = (struct PageFrame *)from_ppage;
-                    if(kalloc(&to_frame) == -1){
-                    }
-                    strcpy((uint8_t *)from_frame, (uint8_t *)to_frame, PageSize); 
-                    to_ppage[j] = to_frame; 
+int clone_pagetable(pagetable_t from, pagetable_t to){
+    strcpy((uint8_t *)from, (uint8_t *)to, PageSize); 
+    pagetable_t from_upage, from_mpage, from_page;
+    pagetable_t to_upage, to_mpage, to_page;
+    uint64_t fppage, tppage;
+    for(int i = 0 ; i < PENTRY_CNT; i++){
+        if(GET_PAGE_SET(from[i]) == 0){
+            continue;
+        }
+        fppage = GET_PHYSICAL_ADDR(from[i]);
+        from_upage = fppage;
+        kalloc(&to_upage);
+        strcpy(from_upage, to_upage, PageSize);
+        to[i] = (uint64_t)to_upage;
+        for(int j = 0; j < PENTRY_CNT; j++){
+            if(GET_PAGE_SET(from_upage[j]) == 0){
+                continue;
+            }
+            fppage = GET_PHYSICAL_ADDR(from_upage[j]);
+            from_mpage = fppage;
+            kalloc(&to_mpage);
+            strcpy(from_mpage, to_mpage, PageSize);
+            to_upage[j] = (uint64_t)to_mpage;
+            for(int k = 0; k < PENTRY_CNT; k++){
+                if(GET_PAGE_SET(from_mpage[k]) == 0){
+                    continue;
                 }
+                fppage = GET_PHYSICAL_ADDR(from_mpage[k]);
+                from_page = fppage;
+                kalloc(&to_page);
+                strcpy(from_page, to_page, PageSize);
+                to_mpage[j] = (uint64_t)to_page;
             }
-            from_frame = (struct PageFrame *)from_gpage;
-            if(kalloc(&to_frame) == -1){
-            }
-            strcpy((uint8_t *)from_frame, (uint8_t *)to_frame, PageSize); 
-            to_ppage[i] = to_frame; 
         }
     }
-    from_frame = (struct PageFrame *)from;
-    to_frame = (struct PageFrame *)to;
-    strcpy((uint8_t *)from_frame, (uint8_t *)to_frame, PageSize); 
+
 }
 
 
 void copy_from_user(pagetable_t user_pgtb, uint8_t* from, uint8_t* to, uint64_t size){
     pagetable_t va = (pagetable_t)(( (uint64_t)from / PageSize) * PageSize);
     from = (uint8_t *)((uint64_t)from % PageSize);
-    struct pageframe *frame = get_physical_page(user_pgtb, va);
+    struct pageframe *frame = get_physical_page(user_pgtb, va, 2);
     from = (uint8_t *)frame + (uint64_t)from;
     strcpy(from, to, size);
     if( (uint64_t)from % PageSize + size < PageSize){
@@ -296,7 +361,7 @@ void copy_from_user(pagetable_t user_pgtb, uint8_t* from, uint8_t* to, uint64_t 
     while(size > 0){
         va += PageSize;
         to += size;
-        frame = get_physical_page(user_pgtb, va);
+        frame = get_physical_page(user_pgtb, va, 2);
         strcpy((uint8_t *)frame, to, size);
         size -= PageSize;
     }
@@ -306,7 +371,7 @@ void copy_from_user(pagetable_t user_pgtb, uint8_t* from, uint8_t* to, uint64_t 
 void copy_to_user(pagetable_t user_pgtb, char* from, char *to, uint64_t size){
     pagetable_t va = (pagetable_t)(( (uint64_t)to / PageSize) * PageSize);
     to = (uint8_t *)((uint64_t)to % PageSize);
-    struct pageframe *frame = get_physical_page(user_pgtb, va);
+    struct pageframe *frame = get_physical_page(user_pgtb, va, 2);
     to = (uint8_t *)frame + (uint64_t)to;
     strcpy(from, to, size);
     if( (uint64_t)from % PageSize + size < PageSize){
@@ -316,7 +381,7 @@ void copy_to_user(pagetable_t user_pgtb, char* from, char *to, uint64_t size){
     while(size > 0){
         va += PageSize;
         from += size;
-        frame = get_physical_page(user_pgtb, va);
+        frame = get_physical_page(user_pgtb, va, 2);
         strcpy(from, (uint8_t *)frame, size);
         size -= PageSize;
     }
