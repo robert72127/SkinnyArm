@@ -21,8 +21,47 @@
 //+------------------------------------------------------------------------------------------------+
 //|                          |   level 0      |  level1        | level 2        |                  |
 //+------------------------------------------------------------------------------------------------+
+// bits63..0
+// get offset from va into given level pte
 #define LVL_ADDR(addr, level) (( (addr) >> (30 - (level*9) )) & 0x1FF)
+// get page offset from va
 #define OFFSET(addr) ((addr) & 0x1FF)
+
+// set bit in a range 63..0 to val 1/0
+#define SET_BIT(addr, bit, val)  ( ( (addr) & (~ ( 1 << (bit) ) ) )  | (1<< (bit) ) )
+#define GET_BIT(addr, bit)  (( (addr) & (1 << (bit)) ) >> (bit) )
+// bit 54, non executable by kernel
+#define SET_K_NON_EXEC(addr)  SET_BIT(addr, 54, 1)
+#define SET_K_EXEC(addr)  SET_BIT(addr, 54, 0)
+#define GET_K_EXEC(addr)  SET_BIT(addr, 54)
+//bit 53, non executable by user
+#define SET_U_NON_EXEC(addr) SET_BIT(addr, 53,1)
+#define SET_U_EXEC(addr)  SET_BIT(addr, 53, 0)
+#define GET_U_EXEC(addr) GET_BIT(addr, 53)
+//bit 10, if not set page fault is generated when accessing
+#define SET_PAGE_SET(addr)  SET_BIT(addr, 10, 1) 
+#define SET_PAGE_NOT_SET(addr)  SET_BIT(addr, 10, 0) 
+#define GET_PAGE_SET(addr)  SET_BIT(addr, 10) 
+// bit 7, 0 is read-write, 1 is for read only
+#define SET_U_RONLY(addr) SET_BIT(addr, 7, 1)
+// warning u_rw means kernl is non executable in this region 
+#define SET_U_RW(addr) SET_BIT(addr, 7, 0)
+#define GET_RW(addr) SET_BIT(addr, 7)
+// bit 6, 0 for kernel only 1 for user/kernel access 
+#define SET_KACCES(addr) SET_BIT(addr, 6, 0)
+#define SET_KUACCESS(addr) SET_BIT(addr, 6, 1)
+#define GET_KUACCESS(addr) SET_BIT(addr, 6, 0)
+//bit 4-2, index to MAIR
+#define SET_MAIR(addr, index) SET_BIT(addr, 4, ( (index) >> 4)); SET_BIT(addr, 3, ( (index) >> 3)); SET_BIT(addr, 2, ( (index) >> 2)) 
+#define GET_MAIR(addr, index) ((GET_BIT(addr, 4) << 2) | ( GET_BIT(addr, 3),  1) |  GET_BIT(addr, 2)) 
+// bits 1-0, specify next level
+// 11 - page table
+// 01 - page
+// *0 - invalid
+#define SET_NEXT_LEVEL_PTABLE(addr) SET_BIT(addr, 1, 1 ); SET_BIT(addr, 0, 1) 
+#define SET_NEXT_LEVEL_PAGE(addr)  SET_BIT(addr, 1, 0 ); SET_BIT(addr, 0, 1) 
+#define SET_NEXT_LEVEL_INVALID(addr)  SET_BIT(addr, 1, 0 ); SET_BIT(addr, 0, 0) 
+#define GET_NEXT_LEVEL(addr) (GET_BIT(addr, 1) << 1) | GET_BIT(addr, 0)
 /**
  * search for physical address corresponding to virtual one
  * if there isn't one create it
