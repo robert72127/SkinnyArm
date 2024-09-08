@@ -27,7 +27,14 @@
  * search for physical address corresponding to virtual one
  * if there isn't one create it
  */
-struct Pagerame *get_physical_page(pagetable_t pagetable, uint64_t va){
+
+/**
+ * @todo we also need to set priviledges etc for pages
+ * after implementing just mapping do that
+ */
+
+
+struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va){
     // we need to decide at each level which bucket it belongs to
     struct PageFrame* frame;
     pagetable_t parent_table;
@@ -52,16 +59,32 @@ struct Pagerame *get_physical_page(pagetable_t pagetable, uint64_t va){
     return frame; 
 }
 
+// map single page of data
+int map_page(pagetable_t pagetable, uint64_t va, uint8_t *data){
+    struct PageFrame *frame = get_physical_page(pagetable,va);
+    if (frame == NULL){
+        return -1;
+    }
+    strcpy(data, (uint8_t *)frame, PageSize);
+    return 0;
+}
+
+
 /**
  * Populate enough of page table to accomodate range from va_start to va_end
  */
-int map_region(pagetable_t pagetable, uint64_t va_start, uint64_t va_end){
+int map_region(pagetable_t pagetable, uint64_t va_start, uint64_t va_end, char* data){
+    // expect va_start and va_end to be multiple of pagesize
+    if (va_start % PageSize != 0 || va_end % PageSize != 0){
+        return -1;
+    }
     uint64_t va_curr = va_start;
     while(va_curr < va_end){
-        if(get_physical_page(pagetable, va_start) == NULL){
+        if(map_page(pagetable, va_start, data) == -1){
             unmap_region(pagetable, va_start, va_curr);
             return -1;
         }
+        data += PageSize;
         va_curr += PageSize;
     }
 }
@@ -125,32 +148,55 @@ void free_pagetable(pagetable_t pagetable){
     struct PageFrame *frame;
     for(int i = 0; i < PageSize/ sizeof(uint64_t); i++){
         gpage = pagetable[i];
-        for(int j = 0; j < PageSize/ sizeof(uint64_t); j++){
-            ppage = gpage[j];
-            for(int k = 0; k < PageSize/ sizeof(uint64_t); k++){
-                lpage = ppage[k];
-                frame = (struct PageFrame *)lpage;
-                kfree(&frame);
+        if(gpage){
+            for(int j = 0; j < PageSize/ sizeof(uint64_t); j++){
+                ppage = gpage[j];
+                if(ppage){
+                    for(int k = 0; k < PageSize/ sizeof(uint64_t); k++){
+                        lpage = ppage[k];
+                        if(lpage){
+                            frame = (struct PageFrame *)lpage;
+                            kfree(&frame);
+                        }
+                    }
+                    frame = (struct PageFrame *)ppage;
+                    kfree(&frame);
+                }
             }
-            frame = (struct PageFrame *)ppage;
+            frame = (struct PageFrame *)gpage;
             kfree(&frame);
         }
-        frame = (struct PageFrame *)gpage;
-        kfree(&frame);
     }
     frame = (struct PageFrame *)pagetable;
     kfree(&frame);
 }
 
-
+extern char _end;
+extern char _start;
 // create page table for kernel
 pagetable_t make_kpagetable(){
     struct Pagetable *pud;
     pagetable_t kpagetable = kalloc(&pud);
+    uint64_t va_start = VKERN_START + &_start;
+    uint64_t va_end = VKERN_START + &_end;
+
+    uint8_t *kernel_memory = &_start;
+
+    // in memory_map.h
+    // MMIO_BASE and MMIO_END is defined with VKERN_START already added
+    uint8_t *mmio_memory = MMIO_BASE - VKERN_START;
 
     // whole kernel address space is 1 GB
     // and also map peripherials
-    map_region(kpagetable, _start, _end);
+    if (map_region(kpagetable, va_start, va_end, kernel_memory) == -1 ){
+        return NULL;
+    } 
+
+    //map peripherials
+    if(map_region(kpagetable, MMIO_BASE, MMIO_END+1, mmio_memory) == -1){
+        return NULL;
+    }
+    return kpagetable;
 }
 
 
@@ -158,15 +204,83 @@ pagetable_t make_kpagetable(){
  * clone pagetable for fork
  */
 int clone_pagetable(pagetable_t from, pagetable_t to){
+    pagetable_t from_lpage, from_ppage,from_gpage;
+    pagetable_t to_lpage, to_ppage,to_gpage;
+
+    struct PageFrame *from_frame, *to_frame;
+    for(int i = 0; i < PageSize/ sizeof(uint64_t); i++){
+        from_gpage = from[i];
+        if(from_gpage){
+            for(int j = 0; j < PageSize/ sizeof(uint64_t); j++){
+                from_ppage = from_gpage[j];
+                if (from_ppage){
+                    for(int k = 0; k < PageSize/ sizeof(uint64_t); k++){ 
+                        from_lpage = from_ppage[k];
+                        if (from_lpage){
+                            from_frame = (struct PageFrame *)from_lpage;
+                            if(kalloc(&to_frame) == -1){
+                            }
+                            strcpy((uint8_t *)from_frame, (uint8_t *)to_frame, PageSize);
+                            to_lpage[k] = to_frame; 
+                        }
+                    }
+                    from_frame = (struct PageFrame *)from_ppage;
+                    if(kalloc(&to_frame) == -1){
+                    }
+                    strcpy((uint8_t *)from_frame, (uint8_t *)to_frame, PageSize); 
+                    to_ppage[j] = to_frame; 
+                }
+            }
+            from_frame = (struct PageFrame *)from_gpage;
+            if(kalloc(&to_frame) == -1){
+            }
+            strcpy((uint8_t *)from_frame, (uint8_t *)to_frame, PageSize); 
+            to_ppage[i] = to_frame; 
+        }
+    }
+    from_frame = (struct PageFrame *)from;
+    to_frame = (struct PageFrame *)to;
+    strcpy((uint8_t *)from_frame, (uint8_t *)to_frame, PageSize); 
+}
+
+
+void copy_from_user(pagetable_t user_pgtb, uint8_t* from, uint8_t* to, uint64_t size){
+    pagetable_t va = (pagetable_t)(( (uint64_t)from / PageSize) * PageSize);
+    from = (uint8_t *)((uint64_t)from % PageSize);
+    struct pageframe *frame = get_physical_page(user_pgtb, va);
+    from = (uint8_t *)frame + (uint64_t)from;
+    strcpy(from, to, size);
+    if( (uint64_t)from % PageSize + size < PageSize){
+        return;
+    }
+    size = size - PageSize + (uint64_t)from;
+    while(size > 0){
+        va += PageSize;
+        to += size;
+        frame = get_physical_page(user_pgtb, va);
+        strcpy((uint8_t *)frame, to, size);
+        size -= PageSize;
+    }
 
 }
 
-void copy_from_user(pagetable_t pgtb, char* addr, uint64_t size){
-
-}
-
-void copy_to_user(pagetable_t pgtb, char* addr, uint64_t size){
-
+void copy_to_user(pagetable_t user_pgtb, char* from, char *to, uint64_t size){
+    pagetable_t va = (pagetable_t)(( (uint64_t)to / PageSize) * PageSize);
+    to = (uint8_t *)((uint64_t)to % PageSize);
+    struct pageframe *frame = get_physical_page(user_pgtb, va);
+    to = (uint8_t *)frame + (uint64_t)to;
+    strcpy(from, to, size);
+    if( (uint64_t)from % PageSize + size < PageSize){
+        return;
+    }
+    size = size - PageSize + (uint64_t)to;
+    while(size > 0){
+        va += PageSize;
+        from += size;
+        frame = get_physical_page(user_pgtb, va);
+        strcpy(from, (uint8_t *)frame, size);
+        size -= PageSize;
+    }
 }
 
 

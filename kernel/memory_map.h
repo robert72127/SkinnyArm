@@ -38,15 +38,18 @@
 #define BOOT_PUD_ATTR (PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK)
 
 
-#define KERN_START 0 //0xffff000000000000
+#define VKERN_START 0 //0xffff000000000000
 
 // memory map
 // see BCM2837-ARM-Peripherals.pdf
-#define RAMFS_START  (KERN_START + 0x8000000)
+/**
+ * @note this is falls in range <_start, _end>
+ */
+#define RAMFS_START  (VKERN_START + 0x8000000)
 
 // page 6 of PDF
-#define MMIO_BASE       (KERN_START +  0x3F000000)
-#define MMIO_END        (KERN_START +  0x3FFFFFFF)
+#define MMIO_BASE       (VKERN_START +  0x3F000000)
+#define MMIO_END        (VKERN_START +  0x3FFFFFFF)
 //Thus a peripheral advertised here at bus address 0x7Ennnnnn is available at physical address 0x3Fnnnnnn.
 
 /* Auxilary mini UART registers */
