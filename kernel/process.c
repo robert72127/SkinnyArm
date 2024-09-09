@@ -8,32 +8,6 @@
 extern void user_program(void);
 
 // free process can be allocated by create_process
-enum ProcesState {FREE, RUNNING, RUNNABLE, WAITING, KILLED};
-
-struct process{
-    // registers this space is used during context switch
-    int64_t x19;
-    int64_t x20;
-    int64_t x21;
-    int64_t x22;
-    int64_t x23;
-    int64_t x24;
-    int64_t x25;
-    int64_t x26;
-    int64_t x27;
-    int64_t x28;
-    int64_t fp;
-    int64_t lr;
-    int64_t sp;
-    // used for thread management
-    struct PageFrame *stack_frame;
-    // frame to store registers after context switch
-    struct PageFrame *trap_frame;
-    struct process *parent;
-    pagetable_t pagetable;
-    enum ProcesState state; // running runnable, waiting, killed
-    uint8_t pid;
-};
 
 #define PROCCNT 64
 struct process process_array[PROCCNT];
@@ -152,6 +126,26 @@ void scheduler(){
     }
 }
 
+void sleep(struct SleepLock *lk, struct SpinLock *spin_lk){
+    struct process *p = get_current_process();
+    p->state = WAITING;
+    p->wait_on = lk;
+
+    spinlock_release(spin_lk);
+    /*TODO switch to scheduler context*/
+
+}
+
+
+void wakeup(struct SleepLock *lk){
+    struct process *p;
+    for(p = process_array; p < &process_array[PROCCNT]; p++){
+        if (p->state == WAITING && p->wait_on == lk){
+            p->state = RUNNABLE;
+            p->wait_on = NULL;
+        }
+    }
+}
 ///////////////////////////////////////////////////////////////////
 ////                        Syscalls                            ///
 ///////////////////////////////////////////////////////////////////

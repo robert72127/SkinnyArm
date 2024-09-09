@@ -1,7 +1,7 @@
 CC = aarch64-none-linux-gnu-gcc
 AS = aarch64-none-linux-gnu-as
 OBJCOPY = aarch64-none-linux-gnu-objcopy
-CFLAGS =  -O0 -ffreestanding -nostdlib -nostartfiles -ggdb
+CFLAGS =  -O0 -ffreestanding -nostdlib -nostartfiles -ggdb -mno-outline-atomics
 #CFLAGS += -Wall
 QEMU = qemu-system-aarch64
 
