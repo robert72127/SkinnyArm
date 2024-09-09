@@ -13,6 +13,9 @@ SRCS_S = $(wildcard $(KERNELDIR)/*.S)
 OBJS = $(patsubst $(KERNELDIR)/*.c,  $(BUILDDIR)/*.o,  $(SRCS_C))
 OBJS += $(patsubst $(KERNELDIR)/*.S,  $(BUILDDIR)/*.o,  $(SRCS_S))
 
+SRCS_U = user/cat.c user/init.c
+OBJS_U = rootfs/cat rootfs/init
+
 ROOTFS := $(wildcard rootfs/*)
 
 all: kernel8.img rootfs
@@ -26,6 +29,9 @@ $(BUILDDIR)/%.o: $(KERNELDIR)/%.S
 $(BUILDDIR)/%.o: $(KERNELDIR)/%.c
 	@mkdir -p $(BUILDDIR)
 	$(CC) $(CFLAGS) -c -o $@ $^
+
+$(OBJS_U): $(SRCS_U)
+	$(CC) $(CFLAGS)  -T user/user.ld  $< user/libc.c -o $@    
 
 kernel8.img:  $(OBJS)   $(KERNELDIR)/link.ld
 	$(CC) $(CFLAGS)  $(OBJS) -T $(KERNELDIR)/link.ld -o $(BUILDDIR)/kernel8.elf

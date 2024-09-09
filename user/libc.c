@@ -1,5 +1,3 @@
-#pragma once
-
 #include "types.h"
 #include "libc.h"
 
@@ -69,7 +67,7 @@ int fork(){
 int execve(const char *pathname, char *const argv[], int argc){
     int ret;
     __asm__ volatile(
-        "mov x8, 5"
+        "mov x8, 5\n"
         "svc 0 \n"
         : "=r"(ret)
         : "r" (pathname), "r"(argv), "r"(argc)
@@ -80,7 +78,7 @@ int execve(const char *pathname, char *const argv[], int argc){
 int wait(){
     int ret;
     __asm__ volatile(
-        "mov x8, 6"
+        "mov x8, 6\n"
         "svc 0 \n"
         : "=r"(ret)
         : 
@@ -88,10 +86,10 @@ int wait(){
     );
 }
 
-int sleep(){
+int sleep(uint32_t sec){
     int ret;
     __asm__ volatile(
-        "mov x8, 7"
+        "mov x8, 7\n"
         "svc 0 \n"
         : "=r"(ret)
         : 
@@ -101,7 +99,7 @@ int sleep(){
 int exit(int exit_code){
     int ret;
     __asm__ volatile(
-        "mov x8, 8"
+        "mov x8, 8\n"
         "svc 0 \n"
         : "=r"(ret)
         : "r"(exit_code)
