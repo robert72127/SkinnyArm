@@ -90,10 +90,15 @@
 
 /**
  * @brief search for physical page corresponding to virtual address
- * if there isn't one create it
+ * if there isn't one:
+ * if you are at level 2 and pa != 0
+ *      set entry to pa
+ * else if pa = 0 
+ *      alloc new page
+ * else 
  * kind can be one of 0: KERNEL, 1: Device, 2 User
  */
-struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va, uint8_t kind){
+struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va, uint64_t pa, uint8_t kind){
     // we need to decide at each level which bucket it belongs to
     struct PageFrame* frame;
     pagetable_t parent_table;
@@ -103,7 +108,25 @@ struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va, uint8_t 
         parent_table = pagetable;
         // if this indirect page doesn't exists yet create it
         if( GET_PAGE_SET(pagetable[(va)]) == 0 ){
-            if(kalloc(&frame) == 0){
+            if(i == 2 && pa != 0) {
+                switch (kind)
+                    {
+                        case 0:
+                            pentry = KERNEL_ENTRY(pentry, pa);
+                            break;
+                        case 1:
+                            pentry = DEVICE_ENTRY(pentry, pa);
+                            break;
+                        case 2:
+                            pentry = USER_ENTRY(pentry, pa);
+                            break;
+                        default:
+                            return NULL;
+                    }
+                    parent_table[LVL_ADDR(va,i)] = pentry;
+                    return (struct PageFrame *)pa;
+            }
+            else if(kalloc(&frame) == 0){
                 switch (i)
                 {
                 case 0:
@@ -151,12 +174,11 @@ struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va, uint8_t 
  * map single page of data
  * kind can be one of 0: KERNEL, 1: Device, 2 User
  */
-int map_page(pagetable_t pagetable, uint64_t va, uint8_t *data, uint8_t kind){
-    struct PageFrame *frame = get_physical_page(pagetable,va,kind);
+int map_page(pagetable_t pagetable, uint64_t va, uint64_t pa, uint8_t kind){
+    struct PageFrame *frame = get_physical_page(pagetable,va,pa,kind);
     if (frame == NULL){
         return -1;
     }
-    strcpy(data, (uint8_t *)frame, PageSize);
     return 0;
 }
 
@@ -166,18 +188,18 @@ int map_page(pagetable_t pagetable, uint64_t va, uint8_t *data, uint8_t kind){
  * Populate enough of page table to accomodate range from va_start to va_end
  * kind can be one of 0: KERNEL, 1: Device, 2 User
  */
-int map_region(pagetable_t pagetable, uint64_t va_start, uint64_t va_end, char* data, uint8_t kind){
+int map_region(pagetable_t pagetable, uint64_t va_start, uint64_t pa_start, uint64_t size, uint8_t kind){
     // expect va_start and va_end to be multiple of pagesize
-    if (va_start % PageSize != 0 || va_end % PageSize != 0){
+    if (va_start % PageSize != 0 || (va_start + size) % PageSize != 0 || pa_start % PageSize != 0) {
         return -1;
     }
     uint64_t va_curr = va_start;
-    while(va_curr < va_end){
-        if(map_page(pagetable, va_start, data, kind) == -1){
+    while(va_curr < va_start + size){
+        if(map_page(pagetable, va_start, pa_start, kind) == -1){
             unmap_region(pagetable, va_start, va_curr);
             return -1;
         }
-        data += PageSize;
+        pa_start += PageSize;
         va_curr += PageSize;
     }
 }
@@ -280,7 +302,11 @@ extern char _start;
  */
 pagetable_t make_kpagetable(){
     struct Pagetable *pud;
-    pagetable_t kpagetable = kalloc(&pud);
+    if(kalloc(&pud) != 0) {
+        return NULL;
+    }
+
+    pagetable_t kpagetable = pud;    
     uint64_t va_start = VKERN_START + &_start;
     uint64_t va_end = VKERN_START + &_end;
 
@@ -292,11 +318,11 @@ pagetable_t make_kpagetable(){
 
     // whole kernel address space is 1 GB
     // and also map peripherials
-    if (map_region(kpagetable, va_start, va_end, kernel_memory, 0) == -1 ){
+    if (map_region(kpagetable, va_start, &_start, va_end - va_start , 0) == -1 ){
         return NULL;
     } 
     //map peripherials
-    if(map_region(kpagetable, MMIO_BASE, MMIO_END+1, mmio_memory, 1) == -1){
+    if(map_region(kpagetable, MMIO_BASE, mmio_memory, MMIO_BASE-MMIO_END, 1) == -1){
         return NULL;
     }
     return kpagetable;
@@ -351,7 +377,7 @@ int clone_pagetable(pagetable_t from, pagetable_t to){
 void copy_from_user(pagetable_t user_pgtb, uint8_t* from, uint8_t* to, uint64_t size){
     pagetable_t va = (pagetable_t)(( (uint64_t)from / PageSize) * PageSize);
     from = (uint8_t *)((uint64_t)from % PageSize);
-    struct pageframe *frame = get_physical_page(user_pgtb, va, 2);
+    struct pageframe *frame = get_physical_page(user_pgtb, va,0, 2);
     from = (uint8_t *)frame + (uint64_t)from;
     strcpy(from, to, size);
     if( (uint64_t)from % PageSize + size < PageSize){
@@ -361,7 +387,7 @@ void copy_from_user(pagetable_t user_pgtb, uint8_t* from, uint8_t* to, uint64_t 
     while(size > 0){
         va += PageSize;
         to += size;
-        frame = get_physical_page(user_pgtb, va, 2);
+        frame = get_physical_page(user_pgtb, va,0, 2);
         strcpy((uint8_t *)frame, to, size);
         size -= PageSize;
     }
@@ -371,7 +397,7 @@ void copy_from_user(pagetable_t user_pgtb, uint8_t* from, uint8_t* to, uint64_t 
 void copy_to_user(pagetable_t user_pgtb, char* from, char *to, uint64_t size){
     pagetable_t va = (pagetable_t)(( (uint64_t)to / PageSize) * PageSize);
     to = (uint8_t *)((uint64_t)to % PageSize);
-    struct pageframe *frame = get_physical_page(user_pgtb, va, 2);
+    struct pageframe *frame = get_physical_page(user_pgtb, va,0, 2);
     to = (uint8_t *)frame + (uint64_t)to;
     strcpy(from, to, size);
     if( (uint64_t)from % PageSize + size < PageSize){
@@ -381,7 +407,7 @@ void copy_to_user(pagetable_t user_pgtb, char* from, char *to, uint64_t size){
     while(size > 0){
         va += PageSize;
         from += size;
-        frame = get_physical_page(user_pgtb, va, 2);
+        frame = get_physical_page(user_pgtb, va,0, 2);
         strcpy(from, (uint8_t *)frame, size);
         size -= PageSize;
     }

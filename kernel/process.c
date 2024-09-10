@@ -226,11 +226,11 @@ int sys_fork(){
 }
 
 /*
-* Check if file is elf, 
+* Check if file is elf by checking elf magic, 
 * if so parse it
 * allocate all necessary memory pages to
 * map it
-* then push arv args into the stack
+* then push argv[] into the stack
 * finally return to the caller
 */
 int sys_execve(char *file, char **argv   ){

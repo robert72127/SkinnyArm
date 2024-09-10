@@ -20,9 +20,10 @@ SECTIONS
         . = ALIGN(16);
         __bss_end = .;
     }
+    . = ALIGN(0x1000);
     _end = .;
     /* align to mage size */
-    _vmem_start = ALIGN(0x1000);
+    _kalloc_start = .;
    /* /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) } */
 }
 __bss_size = (__bss_end - __bss_start);

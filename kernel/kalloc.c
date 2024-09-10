@@ -3,9 +3,9 @@
 #include "definitions.h"
 #include "low_level.h"
 
-extern char _vmem_start;
-const char *vmem_start =(char *)(&_vmem_start);
-const char *vmem_end = (char*)(MMIO_BASE);
+extern char _kalloc_start;
+const char *kalloc_start =(char *)(&_kalloc_start);
+const char *kalloc_end = (char*)(MMIO_BASE);
 
 struct PageFrame *page_frame_linked_list;
 
@@ -21,10 +21,10 @@ struct PageFrame *page_frame_linked_list;
 void kalloc_init(){
     uint64_t num_pages = 0;
 
-    char *current_address = vmem_start;
+    char *current_address = kalloc_start;
     struct PageFrame *current_frame, *previous_frame = NULL;
 
-    if(current_address + PageSize < vmem_end){
+    if(current_address + PageSize < kalloc_end){
         page_frame_linked_list = (struct PageFrame*)(current_address);
         current_address += PageSize;
     }
@@ -33,7 +33,7 @@ void kalloc_init(){
     }
     previous_frame = page_frame_linked_list;
 
-    while(current_address <= vmem_end){
+    while(current_address <= kalloc_end){
         current_frame = (struct PageFrame *)(current_address);
         if(previous_frame != NULL) {
             previous_frame->next = current_frame;

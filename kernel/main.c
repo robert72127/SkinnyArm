@@ -29,9 +29,9 @@ void main()
 
         // vmem starts after rootfs_end so we are good
         kalloc_init();
-        
-        // allocate space for page translation, 
 
+        // map kernel pages 
+        pagetable_t kernel_pagetable = make_kpagetable(); 
 
         irq_vector_init();
         // enable all kinds interrupts for el0

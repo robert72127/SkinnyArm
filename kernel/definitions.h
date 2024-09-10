@@ -24,9 +24,9 @@ void clear_page(struct PageFrame *page);
 void vmem_enable();
 
 // vmem.c
-struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va, uint8_t kind);
-int map_page(pagetable_t pagetable, uint64_t va, uint8_t *data, uint8_t kind);
-int map_region(pagetable_t pagetable, uint64_t va_start, uint64_t va_end, char* data, uint8_t kind);
+struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va, uint64_t pa, uint8_t kind);
+int map_page(pagetable_t pagetable, uint64_t va, uint64_t pa, uint8_t kind);
+int map_region(pagetable_t pagetable, uint64_t va_start, uint64_t pa_start, uint64_t size, uint8_t kind);
 void free_page(pagetable_t pagetable, int64_t va);
 int unmap_region(pagetable_t pagetable, uint64_t va_start, uint64_t va_end);
 void free_pagetable(pagetable_t pagetable);
