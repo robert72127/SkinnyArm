@@ -32,6 +32,9 @@ void main()
 
         // map kernel pages 
         pagetable_t kernel_pagetable = make_kpagetable(); 
+        // load kernel page table
+        enable_vmem(kernel_pagetable);
+
 
         irq_vector_init();
         // enable all kinds interrupts for el0

@@ -70,13 +70,19 @@ __attribute__((noreturn)) void create_first_process(){
     proc->state = RUNNABLE;
     proc->pid = 0;
 
+    /**
+     * @todo map kernel and init in process page_table
+     */
+    // laod process page table
+    load_pagetable(proc->pagetable);
+
+
     __asm__ volatile(
         "msr tpidr_el1, %0\n"
         :
         : "r"(proc)
         :
     );
-    
     
     user_start(user_program, proc->sp);
 }

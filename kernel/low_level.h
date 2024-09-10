@@ -25,3 +25,5 @@ struct process* get_current_process();
 
 void user_timer_interrputs_enable();
 
+
+void load_pagetable(pagetable_t pagetable);

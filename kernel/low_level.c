@@ -74,3 +74,15 @@ int enable_timer_interrupt(){
     return 0;
 }
 //void disable_timer();
+
+
+
+void load_pagetable(pagetable_t pagetable){
+    __asm__ volatile(
+        "msr ttbr0_el1, %0\n" // load user pagetable
+        :
+        : "r"(pagetable)
+        :
+    );
+}
+
