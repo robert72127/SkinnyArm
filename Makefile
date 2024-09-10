@@ -18,7 +18,7 @@ OBJS_U = rootfs/cat rootfs/init
 
 ROOTFS := $(wildcard rootfs/*)
 
-all: kernel8.img rootfs
+all: kernel8.img rootfs.cpio
 
 .PHONY: run clean
 
@@ -38,13 +38,13 @@ kernel8.img:  $(OBJS)   $(KERNELDIR)/link.ld
 	$(OBJCOPY) $(BUILDDIR)/kernel8.elf -O binary kernel8.img
 
 # QEMU loads the cpio archive file to 0x8000000 by default.
-rootfs: $(ROOTFS)
+rootfs.cpio: $(ROOTFS)
 	find ./rootfs | cpio -o -H newc > rootfs.cpio	
 
-run: kernel8.img rootfs 
+run: kernel8.img rootfs.cpio
 	$(QEMU) -M raspi3b -kernel kernel8.img -initrd rootfs.cpio -serial null -serial stdio 
 
-run-gdb: kernel8.img rootfs 
+run-gdb: kernel8.img rootfs.cpio
 	$(QEMU) -M raspi3b -kernel kernel8.img  -initrd rootfs.cpio -serial null -serial stdio  -S -gdb tcp::1234  
 	# then we load :
 	# aarch64-none-linux-gnu-gdb build/kernel8.elf   

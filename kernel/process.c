@@ -225,9 +225,15 @@ int sys_fork(){
     proc->state = RUNNABLE;
 }
 
-// later switch to searching from initramfs and elf parsing
-// for now just provide a function we want to jump to
-int sys_execve(   ){
+/*
+* Check if file is elf, 
+* if so parse it
+* allocate all necessary memory pages to
+* map it
+* then push arv args into the stack
+* finally return to the caller
+*/
+int sys_execve(char *file, char **argv   ){
     /*
     void(*fun)() = 
     // get caller process
