@@ -31,12 +31,12 @@
 #define SET_BIT(addr, bit, val)  ( ( (addr) & (~ ( 1ULL << (bit) ) ) )  | (val << (bit) ) )
 #define GET_BIT(addr, bit)  (( (addr) & (1ULL << (bit)) ) >> (bit) )
 //bit 54, non executable by user
-#define SET_U_NON_EXEC(addr) SET_BIT(addr, 54,1ULL)
-#define SET_U_EXEC(addr)  SET_BIT(addr, 54, 0ULL)
+#define SET_U_NON_EXEC(addr) SET_BIT(addr, 54,0ULL)
+#define SET_U_EXEC(addr)  SET_BIT(addr, 54, 1ULL)
 #define GET_U_EXEC(addr) GET_BIT(addr, 54)
 // bit 53, non executable by kernel
-#define SET_K_NON_EXEC(addr)  SET_BIT(addr, 53, 1ULL)
-#define SET_K_EXEC(addr)  SET_BIT(addr, 53, 0ULL)
+#define SET_K_NON_EXEC(addr)  SET_BIT(addr, 53, 0ULL)
+#define SET_K_EXEC(addr)  SET_BIT(addr, 53, 1ULL)
 #define GET_K_EXEC(addr)  SET_BIT(addr, 53)
 // set physical page address in page table entry
 #define SET_PHYSICAL_ADDR(addr, phys_addr) ( ( (addr) & (~ 0x0000FFFFFFFFF000) ) |   ( ( (phys_addr) << 12  )  & 0x0000FFFFFFFFF000))
@@ -55,7 +55,7 @@
 #define SET_KUACCES(addr) SET_BIT(addr, 6, 1ULL)
 #define GET_KUACCES(addr) GET_BIT(addr, 6, 0ULL)
 //bit 4-2, index to MAIR
-#define SET_MAIR(addr, index)  (SET_BIT(SET_BIT(SET_BIT(addr, 4, ( (index) >> 4)),  3, ( (index) >> 3)) , 2, ( (index) >> 2)) ) 
+#define SET_MAIR(addr, index)  (SET_BIT(SET_BIT(SET_BIT(addr, 4, ( 0x1 & ((index) >> 2 ))),  3, (0x1 & ((index) >> 1) ) ) , 2, (0x1 & index)  ) ) 
 #define GET_MAIR(addr, index) ((GET_BIT(addr, 4) << 2) | ( GET_BIT(addr, 3),  1) |  GET_BIT(addr, 2)) 
 // bits 1-0, specify next level
 // 11 - page table
