@@ -21,39 +21,39 @@
 #define IND_LVL 3
 // bits63..0
 // get offset from va into given level pte
-#define LVL_ADDR(addr, level) (( (addr) >> (30 - (level*9) )) & 0x1FF)
+#define LVL_ADDR(addr, level) ( ( (addr) >> (30 - (level*9) )) & 0x1FF)
 // get page offset from va
 #define OFFSET(addr) ((addr) & 0x1FF)
 /**
  * Construct page_table_Entry
  */
 // set bit in a range 63..0 to val 1/0
-#define SET_BIT(addr, bit, val)  ( ( (addr) & (~ ( 1 << (bit) ) ) )  | (1<< (bit) ) )
-#define GET_BIT(addr, bit)  (( (addr) & (1 << (bit)) ) >> (bit) )
-// bit 54, non executable by kernel
-#define SET_K_NON_EXEC(addr)  SET_BIT(addr, 54, 1)
-#define SET_K_EXEC(addr)  SET_BIT(addr, 54, 0)
-#define GET_K_EXEC(addr)  SET_BIT(addr, 54)
-//bit 53, non executable by user
-#define SET_U_NON_EXEC(addr) SET_BIT(addr, 53,1)
-#define SET_U_EXEC(addr)  SET_BIT(addr, 53, 0)
-#define GET_U_EXEC(addr) GET_BIT(addr, 53)
+#define SET_BIT(addr, bit, val)  ( ( (addr) & (~ ( 1ULL << (bit) ) ) )  | (val << (bit) ) )
+#define GET_BIT(addr, bit)  (( (addr) & (1ULL << (bit)) ) >> (bit) )
+//bit 54, non executable by user
+#define SET_U_NON_EXEC(addr) SET_BIT(addr, 54,1ULL)
+#define SET_U_EXEC(addr)  SET_BIT(addr, 54, 0ULL)
+#define GET_U_EXEC(addr) GET_BIT(addr, 54)
+// bit 53, non executable by kernel
+#define SET_K_NON_EXEC(addr)  SET_BIT(addr, 53, 1ULL)
+#define SET_K_EXEC(addr)  SET_BIT(addr, 53, 0ULL)
+#define GET_K_EXEC(addr)  SET_BIT(addr, 53)
 // set physical page address in page table entry
 #define SET_PHYSICAL_ADDR(addr, phys_addr) ( ( (addr) & (~ 0x0000FFFFFFFFF000) ) |   ( ( (phys_addr) << 12  )  & 0x0000FFFFFFFFF000))
 #define GET_PHYSICAL_ADDR(addr) ((addr &  0x0000FFFFFFFFF000 ) >> 12)  
 //bit 10, if not set page fault is generated when accessing
-#define SET_PAGE_SET(addr)  SET_BIT(addr, 10, 1) 
-#define SET_PAGE_NOT_SET(addr)  SET_BIT(addr, 10, 0) 
-#define GET_PAGE_SET(addr)  GET_BIT(addr, 10) 
+#define SET_PAGE_SET(addr)  SET_BIT(addr, 10, 1ULL) 
+#define SET_PAGE_NOT_SET(addr)  SET_BIT(addr, 10, 0ULL) 
+#define GET_PAGE_SET(addr)  GET_BIT(addr, 10ULL) 
 // bit 7, 0 is read-write, 1 is for read only
-#define SET_U_RONLY(addr) SET_BIT(addr, 7, 1)
+#define SET_RONLY(addr) SET_BIT(addr, 7, 1ULL)
 // warning u_rw means kernl is non executable in this region 
-#define SET_U_RW(addr) SET_BIT(addr, 7, 0)
-#define GET_RW(addr) GET_BIT(addr, 7)
+#define SET_RW(addr) SET_BIT(addr, 7, 0ULL)
+#define GET_RW(addr) GET_BIT(addr, 7ULL)
 // bit 6, 0 for kernel only 1 for user/kernel access 
-#define SET_KACCES(addr) SET_BIT(addr, 6, 0)
-#define SET_KUACCESS(addr) SET_BIT(addr, 6, 1)
-#define GET_KUACCESS(addr) GET_BIT(addr, 6, 0)
+#define SET_KACCES(addr) SET_BIT(addr, 6, 0ULL)
+#define SET_KUACCES(addr) SET_BIT(addr, 6, 1ULL)
+#define GET_KUACCES(addr) GET_BIT(addr, 6, 0ULL)
 //bit 4-2, index to MAIR
 #define SET_MAIR(addr, index)  (SET_BIT(SET_BIT(SET_BIT(addr, 4, ( (index) >> 4)),  3, ( (index) >> 3)) , 2, ( (index) >> 2)) ) 
 #define GET_MAIR(addr, index) ((GET_BIT(addr, 4) << 2) | ( GET_BIT(addr, 3),  1) |  GET_BIT(addr, 2)) 
@@ -67,17 +67,17 @@
 #define GET_NEXT_LEVEL(addr) (GET_BIT(addr, 1) << 1) | GET_BIT(addr, 0)
 
 // points to next level table
-#define PGDPUD_ENTRY(addr, phys_addr) (SET_K_NON_EXEC(addr) | SET_PAGE_SET(addr) |  SET_U_NON_EXEC(addr) | SET_NEXT_LEVEL_PAGE(addr) | SET_PHYSICAL_ADDR(addr, phys_addr) )
+#define PGDPUD_ENTRY(addr, phys_addr) (SET_K_NON_EXEC(SET_PAGE_SET(SET_U_NON_EXEC(SET_NEXT_LEVEL_PAGE(SET_PHYSICAL_ADDR(addr, phys_addr) )))))
 // points to page_table_entry (ie actuall page that holds user/kernel data)
-#define PMD_ENTRY(addr, phys_addr) (SET_K_NON_EXEC(addr) | SET_PAGE_SET(addr) |  SET_U_NON_EXEC(addr) | SET_NEXT_LEVEL_PAGE(addr) | SET_PHYSICAL_ADDR(addr, phys_addr) )
+#define PMD_ENTRY(addr, phys_addr) (SET_K_NON_EXEC(SET_PAGE_SET(SET_U_NON_EXEC(SET_NEXT_LEVEL_PAGE(SET_PHYSICAL_ADDR(addr, phys_addr) )))))
 // points to kernel page
-#define KERNEL_ENTRY(addr, phys_addr) (SET_K_EXEC(addr) | SET_U_NON_EXEC(addr) | SET_PAGE_SET(addr) | SET_KACCES(addr) | SET_MAIR(addr, 0) | SET_NEXT_LEVEL_INVALID(addr) | SET_PHYSICAL_ADDR(addr, phys_addr) )
+#define KERNEL_ENTRY(addr, phys_addr) (SET_K_EXEC(SET_U_NON_EXEC(SET_PAGE_SET(SET_KACCES(SET_MAIR (SET_NEXT_LEVEL_INVALID(SET_PHYSICAL_ADDR(addr, phys_addr)),0))))))
 // kernel device pages
-#define DEVICE_ENTRY(addr, phys_addr) (SET_K_EXEC(addr) | SET_U_NON_EXEC(addr) | SET_PAGE_SET(addr) | SET_KACCES(addr) | SET_MAIR(addr, 1) | SET_NEXT_LEVEL_INVALID(addr) | SET_PHYSICAL_ADDR(addr, phys_addr) )
+#define DEVICE_ENTRY(addr, phys_addr) (SET_K_EXEC(SET_U_NON_EXEC(SET_PAGE_SET(SET_RW(SET_KACCES(SET_MAIR(SET_NEXT_LEVEL_INVALID(SET_PHYSICAL_ADDR(addr, phys_addr)),1)))))))
 // points to user page
-#define USER_ENTRY(addr, phys_addr) (SET_K_EXEC(addr) | SET_U_EXEC(addr) | SET_PAGE_SET(addr) | SET_U_RW(addr) | SET_KACCES(addr) | SET_MAIR(addr, 0) | SET_NEXT_LEVEL_INVALID(addr) | SET_PHYSICAL_ADDR(addr, phys_addr) )
+#define USER_ENTRY(addr, phys_addr) (SET_K_EXEC(SET_U_EXEC(SET_PAGE_SET(SET_RW(SET_KUACCES(SET_MAIR(SET_NEXT_LEVEL_INVALID(SET_PHYSICAL_ADDR(addr, phys_addr) ),0)))))))
 // invalid entry
-#define INVALID_ENTRY(addr) (SET_PAGE_NOT_SET(addr))
+#define INVALID_ENTRY(addr) (SET_PAGE_NOT_SET(SET_PHYSICAL_ADDR(addr, 0)))
 
 // each page is 4 kB, each entry is 64 bits so there will be 512 of them
 #define PENTRY_CNT 512
@@ -101,18 +101,16 @@
 struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va, uint64_t pa, uint8_t kind){
     // we need to decide at each level which bucket it belongs to
     struct PageFrame* frame;
-    pagetable_t parent_table;
     uint64_t pentry;
     for(int i = 0; i <= 2; i++){
         pentry = 0;
-        parent_table = pagetable;
         // if this indirect page doesn't exists yet create it
-        if( GET_PAGE_SET(pagetable[(va)]) == 0 ){
+        if( GET_PAGE_SET(pagetable[LVL_ADDR(va,i)]) == 0 ){
             if(i == 2 && pa != 0) {
                 switch (kind)
                     {
                         case 0:
-                            pentry = KERNEL_ENTRY(pentry, pa);
+                            pentry = PGDPUD_ENTRY(pentry, pa);
                             break;
                         case 1:
                             pentry = DEVICE_ENTRY(pentry, pa);
@@ -123,7 +121,7 @@ struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va, uint64_t
                         default:
                             return NULL;
                     }
-                    parent_table[LVL_ADDR(va,i)] = pentry;
+                    pagetable[LVL_ADDR(va,i)] = pentry;
                     return (struct PageFrame *)pa;
             }
             else if(kalloc(&frame) == 0){
@@ -134,6 +132,7 @@ struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va, uint64_t
                     break;
                 case 1:
                     pentry = PMD_ENTRY(pentry, (uint64_t)frame);
+                    break;
                 case 2:
                     switch (kind)
                     {
@@ -156,17 +155,15 @@ struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va, uint64_t
                     return NULL;
                 }
                 
-                parent_table[LVL_ADDR(va,i)] = pentry;
-                pagetable = (pagetable_t)(frame);
+                pagetable[LVL_ADDR(va,i)] = pentry;
             }
             else{
                 return NULL;
             }
         }
-        pagetable = &pagetable[LVL_ADDR(va ,i)];
-        frame = (struct PageFrame *)(pagetable);
+        pagetable = GET_PHYSICAL_ADDR(pagetable[LVL_ADDR(va ,i)]);
     }
-    return frame; 
+    return (struct PageFrame *)pagetable; 
 }
 
 /**
@@ -195,7 +192,7 @@ int map_region(pagetable_t pagetable, uint64_t va_start, uint64_t pa_start, uint
     }
     uint64_t va_curr = va_start;
     while(va_curr < va_start + size){
-        if(map_page(pagetable, va_start, pa_start, kind) == -1){
+        if(map_page(pagetable, va_curr, pa_start, kind) == -1){
             unmap_region(pagetable, va_start, va_curr);
             return -1;
         }
@@ -225,7 +222,7 @@ void free_page(pagetable_t pagetable, int64_t va){
     }
     struct PageFrame *frame = (struct PageFrame *)current_table;
     kfree(&frame);
-    pentry = SET_PAGE_NOT_SET(0);
+    pentry = INVALID_ENTRY(0);
     parent_table[LVL_ADDR(va,2)] = pentry;
 
     // check if parent contains other entries, if not free it too
@@ -412,5 +409,3 @@ void copy_to_user(pagetable_t user_pgtb, char* from, char *to, uint64_t size){
         size -= PageSize;
     }
 }
-
-

@@ -101,7 +101,9 @@ enable_vmem:
     bic x2, x2, (1 << 2)   // Disable Data Cache (C bit)
     bic x2, x2, (1 << 12)  // Disable Instruction Cache (I bit)
 
-    msr sctlr_el1, x2 
+    msr sctlr_el1, x2
+   # dsb sy           // Ensure all memory accesses complete
+   # isb              // Synchronize the instruction pipeline 
     ret
 
 

@@ -5,7 +5,7 @@
 
 __attribute__((aligned(16))) uint8_t kernel_stack[NCPU * 4096];
 
-extern char _end;
+extern char _end, _start;
 
 void tick()
 {
@@ -32,6 +32,13 @@ void main()
 
         // map kernel pages 
         pagetable_t kernel_pagetable = make_kpagetable(); 
+        if(kernel_pagetable == NULL){
+
+            return -1;
+        }
+        for(uint64_t sttr = &_start; sttr < &_end; sttr += PageSize){
+            get_physical_page(kernel_pagetable, sttr, 0, 0);
+        }
         // load kernel page table
         enable_vmem(kernel_pagetable);
 

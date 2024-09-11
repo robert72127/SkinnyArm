@@ -21,6 +21,8 @@
 // configure into single macro
 #define TCR_CONFIG_DEFAULT (TCR_CONFIG_REGION_48bit | TCR_CONFIG_4KB)
 
+
+
 // attributes for device memory
 #define MAIR_DEVICE_nGnRnE 0b00000000
 // atributes for normal memory, no cahced 
