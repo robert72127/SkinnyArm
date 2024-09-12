@@ -24,3 +24,4 @@ make run
 ### Reference:
     * https://github.com/bztsrc/raspi3-tutorial/tree/master
     * https://people.cs.nycu.edu.tw/~ttyeh/course/2024_Spring/IOC5226/outline.html
+    * https://cs140e.sergio.bz/docs/BCM2837-ARM-Peripherals.pdf
