@@ -5,7 +5,7 @@
 
 extern char _kalloc_start;
 const char *kalloc_start =(char *)(&_kalloc_start);
-const char *kalloc_end = (char*)(MMIO_BASE);
+const char *kalloc_end = (char*)(MMIO_BASE - VKERN_START);
 
 struct PageFrame *page_frame_linked_list;
 

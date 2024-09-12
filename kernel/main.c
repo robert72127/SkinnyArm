@@ -19,14 +19,6 @@ void main()
     // print hello world from core 0
     if (cpu_id == 0)
     {
-        uint8_t *rootfs_start = (char *)RAMFS_START;
-        uint8_t *rootfs_end;
-        if(init_ramfs(&rootfs_end) != 0){
-            rootfs_end = rootfs_start;
-        }
-        // add padding to rootfs_end
-        rootfs_end = (char *) (( (uint32_t)(rootfs_end + PageSize -1) / PageSize ) * PageSize);
-
         // vmem starts after rootfs_end so we are good
         kalloc_init();
 
@@ -36,11 +28,17 @@ void main()
 
             return -1;
         }
-        for(uint64_t sttr = &_start; sttr < &_end; sttr += PageSize){
-            get_physical_page(kernel_pagetable, sttr, 0, 0);
-        }
         // load kernel page table
         enable_vmem(kernel_pagetable);
+
+        uint8_t *rootfs_start = (char *)RAMFS_START;
+        uint8_t *rootfs_end;
+        if(init_ramfs(&rootfs_end) != 0){
+            rootfs_end = rootfs_start;
+        }
+        // add padding to rootfs_end
+        rootfs_end = (char *) (( (uint32_t)(rootfs_end + PageSize -1) / PageSize ) * PageSize);
+
 
 
         irq_vector_init();
@@ -56,7 +54,7 @@ void main()
 
         //vmem_init(); 
        
-        create_first_process();
+        //create_first_process();
         /*
          // say hello
          while (1)

@@ -11,7 +11,7 @@
 //+------------------------------------------------------------------------------------------------+
 //|         |47:39 PGD Index |38:30 PUD Index | 29:21PMD Index |20:12 PTE Index | 11:0 Page offset |
 //+------------------------------------------------------------------------------------------------+
-//|                          |   level 0      |  level1        | level 2        |                  |
+//|        |   level 0      |  level1        | level 2        |   LEVEL 3      |
 //+------------------------------------------------------------------------------------------------+
 /**
  * Handle extraction from virtual address
@@ -21,7 +21,7 @@
 #define IND_LVL 3
 // bits63..0
 // get offset from va into given level pte
-#define LVL_ADDR(addr, level) ( ( (addr) >> (30 - (level*9) )) & 0x1FF)
+#define LVL_ADDR(addr, level) ( ( (addr) >> (39 - (level*9) )) & 0x1FF)
 // get page offset from va
 #define OFFSET(addr) ((addr) & 0x1FF)
 /**
@@ -102,11 +102,11 @@ struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va, uint64_t
     // we need to decide at each level which bucket it belongs to
     struct PageFrame* frame;
     uint64_t pentry;
-    for(int i = 0; i <= 2; i++){
+    for(int i = 0; i <= 3; i++){
         pentry = 0;
         // if this indirect page doesn't exists yet create it
         if( GET_PAGE_SET(pagetable[LVL_ADDR(va,i)]) == 0 ){
-            if(i == 2 && pa != 0) {
+            if(i == 3 && pa != 0) {
                 switch (kind)
                     {
                         case 0:
@@ -127,13 +127,13 @@ struct PageFrame *get_physical_page(pagetable_t pagetable, uint64_t va, uint64_t
             else if(kalloc(&frame) == 0){
                 switch (i)
                 {
-                case 0:
+                case 0: case 1:
                     pentry = PGDPUD_ENTRY(pentry, (uint64_t)frame);
                     break;
-                case 1:
+                case 2:
                     pentry = PMD_ENTRY(pentry, (uint64_t)frame);
                     break;
-                case 2:
+                case 3:
                     switch (kind)
                     {
                         case 0:
@@ -208,41 +208,26 @@ int map_region(pagetable_t pagetable, uint64_t va_start, uint64_t pa_start, uint
  * if so do that too
  */
 void free_page(pagetable_t pagetable, int64_t va){
-    pagetable_t parent_table, gparent_table, current_table = pagetable;
-    uint64_t pentry;
-    for(int i = 0; i <= 2; i++){
-        gparent_table = parent_table;
-        parent_table = current_table;
-        pentry = current_table[LVL_ADDR(va ,i)];
-        if (GET_PAGE_SET(pentry) == 0){
+    pagetable_t levels[5];
+
+    levels[0] = pagetable;
+    
+    for(int i = 1 ; i < 5; i ++){
+        if(GET_PAGE_SET(levels[0][LVL_ADDR(va,i-1)])  == 0){
             return;
         }
-        current_table = GET_PHYSICAL_ADDR(pentry);
-
+        levels[i] = GET_PHYSICAL_ADDR(levels[i-1][LVL_ADDR(va,i-1)]);
     }
-    struct PageFrame *frame = (struct PageFrame *)current_table;
-    kfree(&frame);
-    pentry = INVALID_ENTRY(0);
-    parent_table[LVL_ADDR(va,2)] = pentry;
-
-    // check if parent contains other entries, if not free it too
-    for(int i = 0; i < PENTRY_CNT; i++ ){
-        if( GET_PAGE_SET(parent_table[i]) != 0){
-            return;
+    kfree(levels[4]);
+    for(int i = 3; i >= 0; i--){
+        levels[i][LVL_ADDR(va,i)] = 0;
+        for(int j = 0; j < PENTRY_CNT; j++){
+            if(GET_PAGE_SET(levels[i][j]) != 0){
+                return;
+            }
         }
-    } 
-    frame = (struct PageFrame *)parent_table;
-    kfree(&frame);
-    gparent_table[LVL_ADDR(va, 1)] = INVALID_ENTRY(0) ;
-
-    for(int i = 0; i < PENTRY_CNT; i++ ){
-        if( GET_PAGE_SET(parent_table[i]) != 0){
-            return;
-        }
+        kfree(levels[i]);
     }
-    frame = (struct PageFrame *)gparent_table;
-    kfree(&frame);
-    pagetable[LVL_ADDR(va, 0)] = INVALID_ENTRY(0); 
 }
 
 /**
@@ -261,36 +246,39 @@ int unmap_region(pagetable_t pagetable, uint64_t va_start, uint64_t va_end){
  * free's whole page table with all subtables
  */
 void free_pagetable(pagetable_t pagetable){
-    pagetable_t lpage,ppage,gpage;
-    uint64_t pentry;
-    struct PageFrame *frame;
+    pagetable_t levels[5];
+    levels[0] = pagetable;
     for(int i = 0; i < PENTRY_CNT; i++){
-        if (GET_PAGE_SET(pagetable[i]) != 0){
-            pentry = GET_PHYSICAL_ADDR(pagetable[i]);
-            gpage = pentry;
-            for(int j = 0; j < PENTRY_CNT; j++){
-                if (GET_PAGE_SET(gpage[j]) != 0){
-                    pentry = GET_PHYSICAL_ADDR(gpage[j]);
-                    gpage = pentry;
-                    for(int k = 0; k < PENTRY_CNT; k++){
-                        if (GET_PAGE_SET(ppage[k]) != 0){
-                            pentry = GET_PHYSICAL_ADDR(ppage[k]);
-                            lpage = pentry;
-                            frame = (struct PageFrame *)lpage;
-                            kfree(&frame);
-                        }
-                    }
-                    frame = (struct PageFrame *)ppage;
-                    kfree(&frame);
-                }
-            }
-            frame = (struct PageFrame *)gpage;
-            kfree(&frame);
+        levels[1] = GET_PHYSICAL_ADDR(levels[0][i]);
+        if (GET_PAGE_SET(levels[0][i]) ==0 ){
+            continue;
         }
+        for(int j = 0; j < PENTRY_CNT; j++){
+            levels[2] = GET_PHYSICAL_ADDR(levels[1][j]);
+            if (GET_PAGE_SET(levels[1][j]) ==0 ){
+                continue;
+            }
+            for(int k = 0; k< PENTRY_CNT; k++ ){
+                levels[3] = GET_PHYSICAL_ADDR(levels[2][k]);
+                if (GET_PAGE_SET(levels[2][k]) ==0 ){
+                    continue;
+                }
+                for(int l = 0; l < PENTRY_CNT; l++){
+                    levels[4] = GET_PHYSICAL_ADDR(levels[3][l]);
+                    if (GET_PAGE_SET(levels[3][l]) ==0 ){
+                        continue;
+                    }
+                    kfree(levels[4]);
+                }
+                kfree(levels[3]);
+            }
+            kfree(levels[2]);
+        }
+        kfree(levels[1]);
     }
-    frame = (struct PageFrame *)pagetable;
-    kfree(&frame);
+    kfree(levels[0]);
 }
+
 
 extern char _end;
 extern char _start;
@@ -319,7 +307,7 @@ pagetable_t make_kpagetable(){
         return NULL;
     } 
     //map peripherials
-    if(map_region(kpagetable, MMIO_BASE, mmio_memory, MMIO_BASE-MMIO_END, 1) == -1){
+    if(map_region(kpagetable, MMIO_BASE, mmio_memory, MMIO_END-MMIO_BASE, 1) == -1){
         return NULL;
     }
     return kpagetable;
@@ -331,43 +319,69 @@ pagetable_t make_kpagetable(){
  *  at each level we should copy page 
  * then walk the copy and change phyisical addresses
  */
-
 int clone_pagetable(pagetable_t from, pagetable_t to){
-    strcpy((uint8_t *)from, (uint8_t *)to, PageSize); 
-    pagetable_t from_upage, from_mpage, from_page;
-    pagetable_t to_upage, to_mpage, to_page;
-    uint64_t fppage, tppage;
-    for(int i = 0 ; i < PENTRY_CNT; i++){
-        if(GET_PAGE_SET(from[i]) == 0){
+    pagetable_t froms[5];
+    pagetable_t tos[5];
+    struct PageFrame *frame;
+    froms[0] = from;
+    tos[0] = tos;
+    strcpy(froms[0], tos[0], PageSize);
+    for(int i = 0; i < PENTRY_CNT; i++){
+        froms[1] = GET_PHYSICAL_ADDR(froms[0][i]);
+        if (GET_PAGE_SET(froms[0][i]) ==0 ){
             continue;
         }
-        fppage = GET_PHYSICAL_ADDR(from[i]);
-        from_upage = fppage;
-        kalloc(&to_upage);
-        strcpy(from_upage, to_upage, PageSize);
-        to[i] = (uint64_t)to_upage;
+        if(kalloc(frame) == -1){
+            free_pagetable(to);
+            return -1;
+        }
+        strcpy(froms[1], tos[1], PageSize);
+        tos[0][i] = PGDPUD_ENTRY(0LL, (uint64_t)frame );
+        tos[1] = frame;
+
         for(int j = 0; j < PENTRY_CNT; j++){
-            if(GET_PAGE_SET(from_upage[j]) == 0){
+            froms[2] = GET_PHYSICAL_ADDR(froms[1][j]);
+            if (GET_PAGE_SET(froms[1][j]) ==0 ){
                 continue;
             }
-            fppage = GET_PHYSICAL_ADDR(from_upage[j]);
-            from_mpage = fppage;
-            kalloc(&to_mpage);
-            strcpy(from_mpage, to_mpage, PageSize);
-            to_upage[j] = (uint64_t)to_mpage;
-            for(int k = 0; k < PENTRY_CNT; k++){
-                if(GET_PAGE_SET(from_mpage[k]) == 0){
+            if(kalloc(frame) == -1){
+                    free_pagetable(to);
+                    return -1;
+            }
+            strcpy(froms[2], tos[2], PageSize);
+            tos[1][j] = PGDPUD_ENTRY(0LL, (uint64_t)frame );
+            tos[2] = frame;
+
+            for(int k = 0; k< PENTRY_CNT; k++ ){
+                froms[3] = GET_PHYSICAL_ADDR(froms[2][k]);
+                if (GET_PAGE_SET(froms[2][k]) ==0 ){
                     continue;
                 }
-                fppage = GET_PHYSICAL_ADDR(from_mpage[k]);
-                from_page = fppage;
-                kalloc(&to_page);
-                strcpy(from_page, to_page, PageSize);
-                to_mpage[j] = (uint64_t)to_page;
+                if(kalloc(frame) == -1){
+                        free_pagetable(to);
+                        return -1;
+                }
+                strcpy(froms[3], tos[3], PageSize);
+                tos[2][k] = PGDPUD_ENTRY(0LL, (uint64_t)frame );
+                tos[3] = frame;
+
+                for(int l = 0; l < PENTRY_CNT; l++){
+                    froms[4] = GET_PHYSICAL_ADDR(tos[3][l]);
+                    if (GET_PAGE_SET(tos[3][l]) ==0 ){
+                        continue;
+                    }
+                    if(kalloc(frame) == -1){
+                            free_pagetable(to);
+                            return -1;
+                        }
+                    tos[3][l] = PGDPUD_ENTRY(0LL, (uint64_t)frame );
+                    tos[4] = frame;
+                    strcpy(froms[4],tos[4], PageSize);
+                }
             }
         }
     }
-
+    return 0;
 }
 
 
