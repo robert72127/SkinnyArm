@@ -32,15 +32,8 @@
 // index 1 for normaly mem with no cache in MAIR_EL1 register
 #define MAIR_IDX_NORMAL_NOCACHE 1
 
-// temporarly for kernel identiry mapping
-#define PD_TABLE 0b11
-#define PD_BLOCK 0b01
-#define PD_ACCESS (1 << 10)
-#define BOOT_PGD_ATTR PD_TABLE
-#define BOOT_PUD_ATTR (PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK)
 
-
-#define VKERN_START 0 //0xffff000000000000
+#define VKERN_START  0xffff000000000000
 
 // memory map
 // see BCM2837-ARM-Peripherals.pdf

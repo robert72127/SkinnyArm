@@ -92,6 +92,7 @@ enable_vmem:
 
     // set pagetable to one passed to this function
     msr ttbr0_el1, x0 
+    msr ttbr1_el1, x0 
     
     // sctlr_el1 is cache config 
     mrs x2, sctlr_el1
@@ -102,8 +103,13 @@ enable_vmem:
     bic x2, x2, (1 << 12)  // Disable Instruction Cache (I bit)
 
     msr sctlr_el1, x2
+    ldr x2, = test
+    br x2
+
+test:
 
     // adjust return address
     mov x2, VKERN_START
     add lr, lr, x2
+    
     ret      

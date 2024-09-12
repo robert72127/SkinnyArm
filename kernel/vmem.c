@@ -71,11 +71,11 @@
 // points to page_table_entry (ie actuall page that holds user/kernel data)
 #define PMD_ENTRY(addr, phys_addr) (SET_K_NON_EXEC(SET_PAGE_SET(SET_U_NON_EXEC(SET_NEXT_LEVEL_PAGE(SET_PHYSICAL_ADDR(addr, phys_addr) )))))
 // points to kernel page
-#define KERNEL_ENTRY(addr, phys_addr) (SET_K_EXEC(SET_U_NON_EXEC(SET_PAGE_SET(SET_KACCES(SET_MAIR (SET_NEXT_LEVEL_INVALID(SET_PHYSICAL_ADDR(addr, phys_addr)),0))))))
+#define KERNEL_ENTRY(addr, phys_addr) (SET_K_EXEC(SET_U_NON_EXEC(SET_PAGE_SET(SET_KACCES(SET_MAIR (SET_NEXT_LEVEL_INVALID(SET_PHYSICAL_ADDR(addr, phys_addr)),1))))))
 // kernel device pages
-#define DEVICE_ENTRY(addr, phys_addr) (SET_K_EXEC(SET_U_NON_EXEC(SET_PAGE_SET(SET_RW(SET_KACCES(SET_MAIR(SET_NEXT_LEVEL_INVALID(SET_PHYSICAL_ADDR(addr, phys_addr)),1)))))))
+#define DEVICE_ENTRY(addr, phys_addr) (SET_K_EXEC(SET_U_NON_EXEC(SET_PAGE_SET(SET_RW(SET_KACCES(SET_MAIR(SET_NEXT_LEVEL_INVALID(SET_PHYSICAL_ADDR(addr, phys_addr)),0)))))))
 // points to user page
-#define USER_ENTRY(addr, phys_addr) (SET_K_EXEC(SET_U_EXEC(SET_PAGE_SET(SET_RW(SET_KUACCES(SET_MAIR(SET_NEXT_LEVEL_INVALID(SET_PHYSICAL_ADDR(addr, phys_addr) ),0)))))))
+#define USER_ENTRY(addr, phys_addr) (SET_K_EXEC(SET_U_EXEC(SET_PAGE_SET(SET_RW(SET_KUACCES(SET_MAIR(SET_NEXT_LEVEL_INVALID(SET_PHYSICAL_ADDR(addr, phys_addr) ),1)))))))
 // invalid entry
 #define INVALID_ENTRY(addr) (SET_PAGE_NOT_SET(SET_PHYSICAL_ADDR(addr, 0)))
 
@@ -91,7 +91,7 @@
 /**
  * @brief search for physical page corresponding to virtual address
  * if there isn't one:
- * if you are at level 2 and pa != 0
+ * if you are at level 3 and pa != 0
  *      set entry to pa
  * else if pa = 0 
  *      alloc new page
