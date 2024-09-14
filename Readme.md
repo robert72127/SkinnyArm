@@ -1,4 +1,4 @@
-## Custom Operating System for Raspberry Pi 3b+
+## Operating System for Raspberry Pi 3b+
 
 ### Overview
  Operating system designed for the Raspberry Pi 3b+, targeting the ARMv8-A (AArch64) architecture.
@@ -11,6 +11,12 @@
 make
 make run
 ```
+
+### Features:
+ * Virtual Memory
+ * Interrupts handling
+ * Process scheduling
+ * Read only file system
 
 ### To be done:
  * Add more syscalls
